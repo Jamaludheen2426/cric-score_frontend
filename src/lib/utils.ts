@@ -1,0 +1,40 @@
+import { BallRecord } from '@/types';
+
+export function formatOvers(oversFloat: number): string {
+  const full = Math.floor(oversFloat);
+  const balls = Math.round((oversFloat - full) * 10);
+  return `${full}.${balls}`;
+}
+
+export function formatRate(rate: number): string {
+  return rate.toFixed(2);
+}
+
+export function getBallLabel(ball: BallRecord): string {
+  if (ball.is_wicket) return 'W';
+  if (ball.is_wide) return `Wd${ball.runs > 0 ? `+${ball.runs}` : ''}`;
+  if (ball.is_noball) return `Nb${ball.runs > 0 ? `+${ball.runs}` : ''}`;
+  return String(ball.runs);
+}
+
+export function getBallColor(ball: BallRecord): string {
+  if (ball.is_wicket) return 'bg-rose-600 text-white';
+  if (ball.is_wide || ball.is_noball) return 'bg-amber-500 text-white';
+  if (ball.runs === 6) return 'bg-purple-600 text-white';
+  if (ball.runs === 4) return 'bg-pitch-600 text-white';
+  if (ball.runs === 0) return 'bg-gray-200 text-gray-600';
+  return 'bg-gray-700 text-white';
+}
+
+export function generatePin(): string {
+  return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
+export function getScoreDisplay(innings: { total_runs: number; total_wickets: number }): string {
+  return `${innings.total_runs}/${innings.total_wickets}`;
+}
+
+export function isDeathOvers(currentOver: number, deathFrom?: number): boolean {
+  if (!deathFrom) return false;
+  return currentOver >= deathFrom;
+}
