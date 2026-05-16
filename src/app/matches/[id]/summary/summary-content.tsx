@@ -51,10 +51,10 @@ export function SummaryContent({ matchId }: { matchId: number }) {
             {winner ? (
               <p className="text-[18px]">
                 <span className="text-ink font-medium">{winner}</span>
-                <span className="serif-italic text-ink-soft ml-2">{resultText}</span>
+                <span className="text-ink-soft ml-2">{resultText}</span>
               </p>
             ) : resultText && (
-              <p className="text-[18px] serif-italic text-ink-soft">{resultText}</p>
+              <p className="text-[18px] text-ink-soft">{resultText}</p>
             )}
           </div>
           <div className="text-right">

@@ -47,7 +47,7 @@ export function LiveScoreCard({ liveData, match }: Props) {
           <div className="grid md:grid-cols-[1fr_auto] gap-8 items-end mb-8">
             <div>
               <p className="text-[14px] text-ink-soft mb-3">
-                <span className="serif-italic text-ink">{currentInnings.battingTeam?.name}</span>
+                <span className="text-ink">{currentInnings.battingTeam?.name}</span>
                 <span className="text-ink-mute"> · batting</span>
               </p>
               <div className="flex items-baseline gap-3">
@@ -158,7 +158,7 @@ export function LiveScoreCard({ liveData, match }: Props) {
                             </span>
                           </div>
                           {card.is_out && (
-                            <span className="block text-[12px] text-ink-mute mt-0.5 serif-italic">
+                            <span className="block text-[12px] text-ink-mute mt-0.5">
                               {card.dismissal_type?.replace(/_/g, ' ')}
                               {card.bowler && ` · b. ${card.bowler.name}`}
                             </span>

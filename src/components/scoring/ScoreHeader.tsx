@@ -44,7 +44,7 @@ export function ScoreHeader({ liveData, match }: Props) {
       <div className="grid md:grid-cols-[1fr_auto] gap-8 items-end mb-8">
         <div>
           <p className="text-[14px] text-ink-soft mb-3">
-            <span className="serif-italic text-ink">{currentInnings.battingTeam?.name}</span>
+            <span className="text-ink">{currentInnings.battingTeam?.name}</span>
             <span className="text-ink-mute"> · batting</span>
           </p>
           <div className="flex items-baseline gap-3">

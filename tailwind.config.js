@@ -41,9 +41,8 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans:   ['var(--font-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        serif:  ['var(--font-serif)', 'ui-serif', 'Georgia', 'serif'],
-        mono:   ['var(--font-mono)', 'ui-monospace', 'monospace'],
+        sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
       },
       fontSize: {
         // Tighter, more refined display sizes

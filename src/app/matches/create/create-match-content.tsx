@@ -58,7 +58,7 @@ export function CreateMatchContent() {
           </Link>
           <p className="eyebrow mb-4">New match</p>
           <h1 className="text-title mb-5">
-            Set up your <span className="serif-italic font-normal text-ink-soft">fixture.</span>
+            Set up your <span className="font-normal text-ink-soft">fixture.</span>
           </h1>
           <p className="text-[15px] text-ink-soft leading-relaxed">
             Name the match, pick the sides, set the conditions of play.
@@ -86,7 +86,7 @@ export function CreateMatchContent() {
                     {teams?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 </div>
-                <div className="serif-italic text-ink-mute text-xl pb-3 text-center hidden sm:block">vs</div>
+                <div className="text-ink-mute text-xl pb-3 text-center hidden sm:block">vs</div>
                 <div>
                   <label className="label">Team B</label>
                   <select className="input" value={form.team_b_id} onChange={e => set('team_b_id', e.target.value)}>

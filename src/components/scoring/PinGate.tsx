@@ -24,7 +24,7 @@ export function PinGate({ matchId, onSuccess }: { matchId: number; onSuccess: (t
       <div className="w-full">
         <p className="eyebrow mb-4 text-center">Restricted</p>
         <h2 className="text-title text-center mb-3">
-          The <span className="serif-italic font-normal text-ink-soft">scorer&apos;s</span> desk.
+          The <span className="font-normal text-ink-soft">scorer&apos;s</span> desk.
         </h2>
         <p className="text-[15px] text-ink-soft text-center mb-10 max-w-[400px] mx-auto">
           Enter the key issued when the match was created.

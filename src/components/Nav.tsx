@@ -15,7 +15,7 @@ export function Nav() {
     <header className="sticky top-0 z-50 bg-paper/85 backdrop-blur-md border-b border-hairline">
       <div className="page-wide flex items-center justify-between h-16">
         <Link href="/" className="font-medium text-[16px] tracking-tight">
-          Cricket <span className="serif-italic text-ink-soft">Scorer</span>
+          Cricket <span className="text-ink-soft">Scorer</span>
         </Link>
 
         <nav className="flex items-center gap-1">

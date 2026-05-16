@@ -39,7 +39,7 @@ function MatchRow({ match, idx }: { match: Match; idx: number }) {
 
             <div className="flex items-baseline gap-2.5 text-[15px] text-ink-soft">
               <span className="text-ink">{match.teamA?.name || 'Team A'}</span>
-              <span className="serif-italic text-ink-mute">vs</span>
+              <span className="text-ink-mute">vs</span>
               <span className="text-ink">{match.teamB?.name || 'Team B'}</span>
             </div>
           </div>
@@ -96,7 +96,7 @@ export function MatchesContent() {
         <div>
           <p className="eyebrow mb-4">Matches</p>
           <h1 className="text-title">
-            All your <span className="serif-italic font-normal text-ink-soft">fixtures.</span>
+            All your <span className="font-normal text-ink-soft">fixtures.</span>
           </h1>
         </div>
         <Link href="/matches/create" className="btn-primary">

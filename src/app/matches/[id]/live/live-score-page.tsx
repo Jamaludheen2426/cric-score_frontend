@@ -48,7 +48,7 @@ export function LiveScorePage({ matchId }: { matchId: number }) {
           <h1 className="text-title mb-3">{match.title}</h1>
           <div className="flex items-baseline gap-2.5 text-[15px] text-ink-soft">
             <span className="text-ink">{match.teamA?.name}</span>
-            <span className="serif-italic text-ink-mute">vs</span>
+            <span className="text-ink-mute">vs</span>
             <span className="text-ink">{match.teamB?.name}</span>
           </div>
         </div>

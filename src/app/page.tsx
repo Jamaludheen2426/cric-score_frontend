@@ -10,7 +10,7 @@ export default function Home() {
         <h1 className="text-hero mb-8">
           A calmer way to keep
           <br />
-          <span className="serif-italic font-normal text-ink-soft">the scorebook.</span>
+          <span className="font-normal text-ink-soft">the scorebook.</span>
         </h1>
 
         <p className="text-lead text-ink-soft max-w-[640px] mb-10">
@@ -64,7 +64,7 @@ export default function Home() {
         <p className="eyebrow mb-6">design note</p>
         <p className="text-[clamp(22px,2.6vw,32px)] leading-[1.35] text-ink">
           The best scoring tools{' '}
-          <span className="serif-italic text-ink-soft">get out of the way.</span>{' '}
+          <span className="text-ink-soft">get out of the way.</span>{' '}
           You enter a ball; everyone watching sees the result a moment later. That’s it. Everything else is restraint.
         </p>
       </section>

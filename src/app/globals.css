@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700&family=Instrument+Serif:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,9 +6,8 @@
 
 @layer base {
   :root {
-    --font-sans:  'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
-    --font-serif: 'Instrument Serif', ui-serif, Georgia, serif;
-    --font-mono:  'JetBrains Mono', ui-monospace, monospace;
+    --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   }
 
   * { box-sizing: border-box; }
@@ -20,20 +19,22 @@
 
   body {
     font-family: var(--font-sans);
-    font-feature-settings: 'ss01', 'cv11', 'liga';
+    font-feature-settings: 'cv11', 'ss01', 'liga';
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     background-color: #FAFAF8;
     color: #181816;
     min-height: 100vh;
     line-height: 1.55;
     font-weight: 400;
+    letter-spacing: -0.005em;
   }
 
   h1, h2, h3, h4 {
     font-family: var(--font-sans);
     font-weight: 600;
-    letter-spacing: -0.015em;
+    letter-spacing: -0.022em;
     color: #181816;
   }
 
@@ -54,20 +55,14 @@
   .page-narrow  { @apply max-w-[760px]  mx-auto px-6 sm:px-10 py-16 sm:py-20; }
   .page-wide    { @apply max-w-[1320px] mx-auto px-6 sm:px-10 py-12; }
 
-  /* Editorial form layout — heading on the left, fields on the right */
   .form-page    { @apply max-w-[1200px] mx-auto px-6 sm:px-10 py-16 sm:py-20; }
   .form-grid    { @apply grid lg:grid-cols-[340px_1fr] gap-12 lg:gap-20; }
   .form-aside   { @apply lg:sticky lg:top-24 lg:self-start; }
 
   /* ── Labels ─────────────────────────────────────── */
   .eyebrow {
-    @apply text-[11px] font-medium uppercase text-ink-mute;
-    letter-spacing: 0.14em;
-  }
-  .serif-italic {
-    font-family: var(--font-serif);
-    font-style: italic;
-    font-weight: 400;
+    @apply text-[12px] font-medium uppercase text-ink-mute;
+    letter-spacing: 0.08em;
   }
 
   /* ── Surfaces ───────────────────────────────────── */
@@ -81,82 +76,70 @@
     @apply bg-surface border border-hairline rounded-xl p-5;
   }
 
-  /* ── Buttons ────────────────────────────────────── */
+  /* ── Buttons — flat, simple, weighty ────────────── */
   .btn {
     @apply inline-flex items-center justify-center gap-2 font-medium text-[14px]
-           px-5 py-2.5 rounded-md transition-all duration-150 select-none cursor-pointer
+           px-4 py-2.5 rounded-lg transition-all duration-150 select-none cursor-pointer
            disabled:opacity-40 disabled:cursor-not-allowed border border-transparent;
   }
-  .btn-primary {
-    @apply btn bg-ink text-paper hover:bg-[#000] hover:-translate-y-px hover:shadow-soft;
-  }
-  .btn-accent {
-    @apply btn bg-accent text-white hover:bg-accent-strong hover:-translate-y-px hover:shadow-soft;
-  }
-  .btn-secondary {
-    @apply btn bg-surface text-ink border-hairline-strong hover:border-ink hover:-translate-y-px;
-  }
-  .btn-ghost {
-    @apply btn bg-transparent text-ink-soft hover:text-ink hover:bg-surface-soft;
-  }
-  .btn-danger {
-    @apply btn bg-wicket text-white hover:bg-[#9A3232];
-  }
-  .btn-lg { @apply px-7 py-3.5 text-[15px] rounded-lg; }
-  .btn-sm { @apply px-3.5 py-1.5 text-[12px]; }
+  .btn-primary   { @apply btn bg-ink text-paper hover:bg-[#000]; }
+  .btn-accent    { @apply btn bg-accent text-white hover:bg-accent-strong; }
+  .btn-secondary { @apply btn bg-surface text-ink border-hairline-strong hover:border-ink; }
+  .btn-ghost     { @apply btn bg-transparent text-ink-soft hover:text-ink hover:bg-surface-soft; }
+  .btn-danger    { @apply btn bg-wicket text-white hover:bg-[#9A3232]; }
+  .btn-lg        { @apply px-6 py-3 text-[15px]; }
+  .btn-sm        { @apply px-3 py-1.5 text-[13px]; }
 
   /* ── Form ───────────────────────────────────────── */
   .input {
-    @apply w-full bg-surface text-ink border border-hairline-strong rounded-md
-           px-4 py-3 text-[15px] placeholder:text-ink-faint
+    @apply w-full bg-surface text-ink border border-hairline-strong rounded-lg
+           px-3.5 py-2.5 text-[14px] placeholder:text-ink-faint
            focus:outline-none focus:border-ink focus:shadow-focus
            transition-all;
   }
   .input-mono { @apply input font-mono tracking-wide; }
-  .label      { @apply block mb-2 eyebrow; }
+  .label      { @apply block mb-1.5 text-[13px] font-medium text-ink-soft; }
 
   /* ── Badges ─────────────────────────────────────── */
   .badge {
-    @apply inline-flex items-center gap-1.5 text-[11px] font-medium uppercase
-           px-2.5 py-1 rounded-full border;
-    letter-spacing: 0.08em;
+    @apply inline-flex items-center gap-1.5 text-[12px] font-medium
+           px-2 py-0.5 rounded-full border;
   }
-  .badge-live      { @apply badge bg-accent-soft text-accent border-accent/30; }
+  .badge-live      { @apply badge bg-accent-soft text-accent border-accent/20; }
   .badge-pending   { @apply badge bg-surface-soft text-ink-soft border-hairline-strong; }
   .badge-completed { @apply badge bg-pitch-soft text-pitch border-pitch/20; }
 
-  /* ── Live dot ───────────────────────────────────── */
   .live-dot {
     @apply inline-block w-1.5 h-1.5 rounded-full bg-accent animate-pulse-dot;
   }
 
-  /* ── Score numerals ─────────────────────────────── */
+  /* ── Score numerals — refined, not display-heavy ── */
   .num-mega {
     font-family: var(--font-sans);
     font-weight: 600;
-    font-size: clamp(72px, 11vw, 160px);
-    line-height: 0.9;
-    letter-spacing: -0.045em;
+    font-size: clamp(60px, 9vw, 128px);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
     font-feature-settings: 'tnum';
     color: #181816;
   }
   .num-xl {
     font-family: var(--font-sans);
     font-weight: 600;
-    font-size: clamp(40px, 5vw, 64px);
-    line-height: 0.95;
+    font-size: clamp(32px, 4vw, 48px);
+    line-height: 1;
     letter-spacing: -0.025em;
     font-feature-settings: 'tnum';
   }
   .num-lg {
     font-family: var(--font-sans);
     font-weight: 500;
-    font-size: 28px;
+    font-size: 24px;
     line-height: 1;
     letter-spacing: -0.015em;
     font-feature-settings: 'tnum';
   }
-  .num-md { font-family: var(--font-mono); font-weight: 500; font-size: 16px; font-feature-settings: 'tnum'; color: #181816; }
+  .num-md { font-family: var(--font-mono); font-weight: 500; font-size: 15px; font-feature-settings: 'tnum'; color: #181816; }
   .num-sm { font-family: var(--font-mono); font-weight: 400; font-size: 13px; font-feature-settings: 'tnum'; color: #5B5B57; }
 
   /* ── Stat ───────────────────────────────────────── */
@@ -165,18 +148,51 @@
   .stat-value {
     font-family: var(--font-sans);
     font-weight: 600;
-    font-size: 24px;
+    font-size: 22px;
     line-height: 1;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.012em;
     color: #181816;
     font-feature-settings: 'tnum';
   }
 
+  /* ── Type scale shortcuts ───────────────────────── */
+  .text-hero {
+    font-size: clamp(44px, 6vw, 72px);
+    line-height: 1.05;
+    letter-spacing: -0.032em;
+    font-weight: 600;
+    color: #181816;
+  }
+  .text-title {
+    font-size: clamp(28px, 3.5vw, 40px);
+    line-height: 1.12;
+    letter-spacing: -0.025em;
+    font-weight: 600;
+    color: #181816;
+  }
+  .text-h2 {
+    font-size: 22px;
+    line-height: 1.25;
+    letter-spacing: -0.018em;
+    font-weight: 600;
+  }
+  .text-h3 {
+    font-size: 16px;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    font-weight: 600;
+  }
+  .text-lead {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #5B5B57;
+  }
+
   /* ── Divider ────────────────────────────────────── */
-  .hr { @apply h-px w-full bg-hairline; }
+  .hr        { @apply h-px w-full bg-hairline; }
   .hr-strong { @apply h-px w-full bg-hairline-strong; }
 
-  /* ── Ball pellets — circular, soft outlines ─────── */
+  /* ── Ball pellets ───────────────────────────────── */
   .pellet {
     @apply relative inline-flex items-center justify-center font-mono font-medium text-[12px]
            w-9 h-9 rounded-full border transition-colors;
@@ -190,10 +206,16 @@
   .pellet-wicket { @apply bg-wicket text-white border-wicket; }
 
   /* ── Reveal helpers ─────────────────────────────── */
-  .rise    { animation: rise 700ms cubic-bezier(0.16, 1, 0.3, 1) both; }
-  .rise-d1 { animation-delay: 60ms; }
-  .rise-d2 { animation-delay: 120ms; }
-  .rise-d3 { animation-delay: 180ms; }
-  .rise-d4 { animation-delay: 240ms; }
-  .rise-d5 { animation-delay: 300ms; }
+  .rise    { animation: rise 600ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .rise-d1 { animation-delay: 50ms; }
+  .rise-d2 { animation-delay: 100ms; }
+  .rise-d3 { animation-delay: 150ms; }
+  .rise-d4 { animation-delay: 200ms; }
+
+  /* ── Toast for errors ───────────────────────────── */
+  .toast {
+    @apply fixed bottom-6 right-6 z-[60] max-w-md bg-surface border border-wicket/30
+           rounded-xl shadow-lift p-4 flex items-start gap-3;
+    animation: rise 300ms ease-out;
+  }
 }

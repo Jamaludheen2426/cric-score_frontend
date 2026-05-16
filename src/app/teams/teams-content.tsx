@@ -18,7 +18,7 @@ export function TeamsContent() {
         <div>
           <p className="eyebrow mb-4">Teams</p>
           <h1 className="text-title">
-            Your <span className="serif-italic font-normal text-ink-soft">squads.</span>
+            Your <span className="font-normal text-ink-soft">squads.</span>
           </h1>
         </div>
         <Link href="/teams/create" className="btn-primary">

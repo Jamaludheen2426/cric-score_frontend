@@ -50,7 +50,7 @@ export function CreateTeamContent() {
           </Link>
           <p className="eyebrow mb-4">New team</p>
           <h1 className="text-title mb-5">
-            Register a <span className="serif-italic font-normal text-ink-soft">side.</span>
+            Register a <span className="font-normal text-ink-soft">side.</span>
           </h1>
           <p className="text-[15px] text-ink-soft leading-relaxed">
             Add the team name and the players. You can use this side in any match.
