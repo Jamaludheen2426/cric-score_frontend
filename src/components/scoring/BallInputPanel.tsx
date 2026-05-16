@@ -10,13 +10,13 @@ interface Props {
 
 type BallType = 'normal' | 'wide' | 'noball';
 
-const RUN_BTNS: Array<{ runs: number; kind: 'dot' | 'run' | 'four' | 'six' }> = [
-  { runs: 0, kind: 'dot' },
+const RUN_BTNS: Array<{ runs: number; kind: 'dot' | 'run' | 'four' | 'six'; sub?: string }> = [
+  { runs: 0, kind: 'dot',  sub: 'dot' },
   { runs: 1, kind: 'run' },
   { runs: 2, kind: 'run' },
   { runs: 3, kind: 'run' },
-  { runs: 4, kind: 'four' },
-  { runs: 6, kind: 'six' },
+  { runs: 4, kind: 'four', sub: 'boundary' },
+  { runs: 6, kind: 'six',  sub: 'maximum' },
 ];
 
 export function BallInputPanel({ onBall, disabled, isLoading }: Props) {
@@ -43,28 +43,27 @@ export function BallInputPanel({ onBall, disabled, isLoading }: Props) {
 
   const kindClass = (kind: string) => {
     switch (kind) {
-      case 'dot':  return 'border-canvas-ridge bg-canvas-raised text-ink-muted hover:border-ink-muted';
-      case 'run':  return 'border-canvas-ridge bg-canvas-raised text-ink hover:border-ink hover:bg-canvas-ridge';
-      case 'four': return 'border-pitch-500 bg-pitch-500/15 text-pitch-400 hover:bg-pitch-500/25';
-      case 'six':  return 'border-saffron-500 bg-saffron-500 text-canvas hover:bg-saffron-400';
+      case 'dot':  return 'bg-surface border-hairline-strong text-ink-soft hover:border-ink hover:text-ink';
+      case 'run':  return 'bg-surface border-hairline-strong text-ink hover:border-ink hover:bg-surface-soft';
+      case 'four': return 'bg-pitch-soft border-pitch/30 text-pitch hover:border-pitch';
+      case 'six':  return 'bg-accent border-accent text-white hover:bg-accent-strong';
       default:     return '';
     }
   };
 
   return (
-    <section className={`slab transition-opacity ${disabled ? 'opacity-60' : ''}`}>
-      <header className="flex items-center justify-between mb-5">
-        <span className="overline">scorer&apos;s desk</span>
-        <div className="flex items-center gap-3">
-          {isLoading && <span className="font-mono text-[10px] text-saffron-500 uppercase tracking-widest animate-flicker">filing…</span>}
-          <span className="eyebrow">ball input</span>
-        </div>
+    <section className={`card rise rise-d3 transition-opacity ${disabled ? 'opacity-60' : ''}`}>
+      <header className="flex items-center justify-between mb-6">
+        <h3 className="text-h3">Ball input</h3>
+        {isLoading
+          ? <span className="text-[12px] text-accent font-medium">Saving…</span>
+          : <span className="eyebrow">scorer&apos;s desk</span>}
       </header>
 
       {/* Ball type segmented switch */}
-      <div className="grid grid-cols-3 gap-px bg-canvas-ridge mb-5">
+      <div className="grid grid-cols-3 gap-2 mb-6 p-1 bg-surface-soft rounded-lg">
         {([
-          { key: 'normal', label: 'Legal',   sub: '6 ball' },
+          { key: 'normal', label: 'Legal',   sub: 'counts' },
           { key: 'wide',   label: 'Wide',    sub: '+1 / +2 death' },
           { key: 'noball', label: 'No-ball', sub: '+1' },
         ] as const).map(opt => {
@@ -73,38 +72,34 @@ export function BallInputPanel({ onBall, disabled, isLoading }: Props) {
             <button
               key={opt.key}
               onClick={() => setBallType(opt.key)}
-              className={`px-4 py-3 text-left transition-colors ${
+              className={`px-4 py-2.5 rounded-md transition-all ${
                 active
-                  ? opt.key === 'normal'
-                    ? 'bg-saffron-500 text-canvas'
-                    : 'bg-ochre-500 text-canvas'
-                  : 'bg-canvas-raised text-ink-muted hover:bg-canvas-ridge'
+                  ? 'bg-surface text-ink shadow-soft'
+                  : 'text-ink-soft hover:text-ink'
               }`}
             >
-              <div className={`font-display text-[16px] uppercase tracking-widest2 ${active ? '' : 'text-ink'}`}>
-                {opt.label}
-              </div>
-              <div className={`font-mono text-[10px] uppercase tracking-widest ${active ? 'text-canvas/70' : 'text-ink-dim'}`}>
-                {opt.sub}
-              </div>
+              <div className="font-medium text-[14px]">{opt.label}</div>
+              <div className="text-[11px] text-ink-mute mt-0.5">{opt.sub}</div>
             </button>
           );
         })}
       </div>
 
       {/* Run grid */}
-      <div className="grid grid-cols-6 gap-2">
-        {RUN_BTNS.map(({ runs, kind }) => (
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
+        {RUN_BTNS.map(({ runs, kind, sub }) => (
           <button
             key={runs}
             onClick={() => handleRun(runs)}
             disabled={disabled}
-            className={`relative h-20 border-2 font-display text-3xl font-black transition-all active:translate-y-[1px] disabled:opacity-40 ${kindClass(kind)}`}
+            className={`relative h-20 sm:h-24 rounded-lg border font-semibold text-3xl transition-all active:translate-y-px disabled:opacity-40 ${kindClass(kind)}`}
           >
             <span>{ballType !== 'normal' ? (runs === 0 ? '0' : `+${runs}`) : runs}</span>
-            {kind === 'four' && <span className="absolute top-1.5 right-2 font-mono text-[9px] uppercase tracking-widest opacity-70">boundary</span>}
-            {kind === 'six' && <span className="absolute top-1.5 right-2 font-mono text-[9px] uppercase tracking-widest text-canvas/70">maximum</span>}
-            {kind === 'dot' && <span className="absolute top-1.5 right-2 font-mono text-[9px] uppercase tracking-widest opacity-50">dot</span>}
+            {sub && (
+              <span className={`absolute bottom-2 inset-x-0 text-[10px] uppercase tracking-eyebrow font-normal opacity-70 ${kind === 'six' ? 'text-white/80' : ''}`}>
+                {sub}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -113,13 +108,13 @@ export function BallInputPanel({ onBall, disabled, isLoading }: Props) {
       <button
         onClick={handleWicket}
         disabled={disabled}
-        className="mt-3 w-full h-16 bg-wicket-500 hover:bg-wicket-600 text-ink font-display text-2xl uppercase tracking-widest2 transition-colors active:translate-y-[1px] disabled:opacity-40"
+        className="mt-3 w-full h-14 sm:h-16 rounded-lg bg-surface border border-wicket text-wicket hover:bg-wicket hover:text-white transition-all font-medium text-[16px] tracking-wide active:translate-y-px disabled:opacity-40"
       >
         Wicket
       </button>
 
-      <p className="mt-4 font-mono text-[10px] text-ink-dim uppercase tracking-widest text-center">
-        select a delivery type, then tap the run — wicket clears modifiers.
+      <p className="mt-5 text-[12px] text-ink-mute text-center">
+        Choose a delivery type, then tap the run.
       </p>
     </section>
   );

@@ -23,15 +23,11 @@ export function CreateTeamContent() {
     { name: '', role: 'batsman', batting_order: 1 },
   ]);
 
-  const addPlayer = () => {
-    setPlayers(prev => [...prev, { name: '', role: 'batsman', batting_order: prev.length + 1 }]);
-  };
-  const removePlayer = (i: number) => {
+  const addPlayer = () => setPlayers(prev => [...prev, { name: '', role: 'batsman', batting_order: prev.length + 1 }]);
+  const removePlayer = (i: number) =>
     setPlayers(prev => prev.filter((_, idx) => idx !== i).map((p, idx) => ({ ...p, batting_order: idx + 1 })));
-  };
-  const updatePlayer = (i: number, field: keyof PlayerInput, value: string | number) => {
+  const updatePlayer = (i: number, field: keyof PlayerInput, value: string | number) =>
     setPlayers(prev => prev.map((p, idx) => idx === i ? { ...p, [field]: value } : p));
-  };
 
   const handleSubmit = async () => {
     if (!teamName.trim()) return alert('Team name required');
@@ -46,25 +42,25 @@ export function CreateTeamContent() {
 
   return (
     <div className="page-narrow">
-      <header className="mb-10 pb-6 border-b-2 border-ink">
-        <Link href="/teams" className="overline hover:text-saffron-500 inline-block mb-3">
-          ← back to dressing room
+      <header className="mb-14">
+        <Link href="/teams" className="text-[13px] text-ink-mute hover:text-ink mb-6 inline-block">
+          ← Back to teams
         </Link>
-        <h1 className="font-display text-[clamp(44px,6.5vw,84px)] uppercase leading-[0.85] text-ink">
-          Register a&nbsp;
-          <span className="font-editorial italic font-normal text-ochre-500">side</span>
+        <p className="eyebrow mb-4">New team</p>
+        <h1 className="text-title">
+          Register a <span className="serif-italic font-normal text-ink-soft">side.</span>
         </h1>
       </header>
 
-      <div className="space-y-px bg-canvas-ridge">
-        <section className="bg-canvas-raised p-7 reveal">
-          <div className="flex items-baseline gap-3 mb-6">
-            <span className="font-mono text-[11px] text-saffron-500 uppercase tracking-widest">part i</span>
-            <h2 className="font-display text-2xl uppercase text-ink">Side identity</h2>
-          </div>
+      <div className="space-y-10">
+        <section>
+          <header className="mb-6">
+            <h2 className="text-h3 mb-1">Team details</h2>
+            <p className="text-[14px] text-ink-soft">A name (and a crest, if you want one).</p>
+          </header>
           <div className="space-y-5">
             <div>
-              <label className="label">Team name *</label>
+              <label className="label">Team name</label>
               <input className="input" value={teamName} onChange={e => setTeamName(e.target.value)} placeholder="e.g. Chennai Super Kings" />
             </div>
             <div>
@@ -74,30 +70,31 @@ export function CreateTeamContent() {
           </div>
         </section>
 
-        <section className="bg-canvas-raised p-7 reveal reveal-d1">
-          <div className="flex items-baseline justify-between mb-6">
-            <div className="flex items-baseline gap-3">
-              <span className="font-mono text-[11px] text-saffron-500 uppercase tracking-widest">part ii</span>
-              <h2 className="font-display text-2xl uppercase text-ink">Roster</h2>
-              <span className="font-mono text-[11px] text-ink-dim ml-2">{players.length} added</span>
+        <div className="hr" />
+
+        <section>
+          <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-h3 mb-1">Roster</h2>
+              <p className="text-[14px] text-ink-soft">{players.length} player{players.length === 1 ? '' : 's'} added.</p>
             </div>
-            <button onClick={addPlayer} className="btn-ghost btn-sm">
+            <button onClick={addPlayer} className="btn-secondary btn-sm">
               <Plus size={14} /> Add player
             </button>
-          </div>
+          </header>
 
           <div className="space-y-2">
             {players.map((player, i) => (
-              <div key={i} className="flex gap-2 items-center bg-canvas-deep border border-canvas-ridge p-1.5">
-                <span className="font-mono text-[11px] text-ink-dim w-7 text-center shrink-0">{String(i + 1).padStart(2, '0')}</span>
+              <div key={i} className="flex gap-2 items-center bg-surface border border-hairline rounded-md p-2">
+                <span className="font-mono text-[12px] text-ink-mute w-7 text-center shrink-0">{String(i + 1).padStart(2, '0')}</span>
                 <input
-                  className="input border-0 bg-transparent flex-1 py-2"
+                  className="input border-0 bg-transparent flex-1 py-2 px-2 focus:shadow-none"
                   value={player.name}
                   onChange={e => updatePlayer(i, 'name', e.target.value)}
                   placeholder={`Player ${i + 1}`}
                 />
                 <select
-                  className="input border-0 bg-transparent w-40 shrink-0 py-2"
+                  className="input border-0 bg-transparent w-40 shrink-0 py-2 px-2 focus:shadow-none"
                   value={player.role}
                   onChange={e => updatePlayer(i, 'role', e.target.value)}
                 >
@@ -106,7 +103,7 @@ export function CreateTeamContent() {
                   <option value="allrounder">All-rounder</option>
                   <option value="wicketkeeper">Wicketkeeper</option>
                 </select>
-                <button onClick={() => removePlayer(i)} className="p-2 text-ink-dim hover:text-wicket-500 shrink-0 transition-colors" title="Remove">
+                <button onClick={() => removePlayer(i)} className="p-2 text-ink-mute hover:text-wicket shrink-0 transition-colors" title="Remove">
                   <X size={14} />
                 </button>
               </div>
@@ -115,10 +112,10 @@ export function CreateTeamContent() {
         </section>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 mt-8 pt-6 border-t-2 border-ink">
+      <div className="flex flex-wrap items-center justify-between gap-3 mt-14 pt-8 border-t border-hairline">
         <Link href="/teams" className="btn-ghost">Cancel</Link>
         <button onClick={handleSubmit} disabled={isLoading} className="btn-primary btn-lg">
-          {isLoading ? 'Registering…' : 'Register side →'}
+          {isLoading ? 'Creating…' : 'Create team →'}
         </button>
       </div>
     </div>

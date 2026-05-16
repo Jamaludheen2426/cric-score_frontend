@@ -20,11 +20,9 @@ export function StartMatchModal({ match, onConfirm, onClose, isLoading }: Props)
   const battingTeamId = tossWinner
     ? (electedTo === 'bat' ? Number(tossWinner) : (Number(tossWinner) === match.team_a_id ? match.team_b_id : match.team_a_id))
     : null;
-
   const bowlingTeamId = battingTeamId
     ? (battingTeamId === match.team_a_id ? match.team_b_id : match.team_a_id)
     : null;
-
   const battingTeam = battingTeamId === match.team_a_id ? match.teamA : match.teamB;
   const bowlingTeam = bowlingTeamId === match.team_a_id ? match.teamA : match.teamB;
 
@@ -42,21 +40,17 @@ export function StartMatchModal({ match, onConfirm, onClose, isLoading }: Props)
   };
 
   return (
-    <div className="fixed inset-0 bg-canvas/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-canvas-raised w-full max-w-xl slab-accent my-8">
-        <div className="overline mb-2">first ball of the day</div>
-        <h2 className="font-display text-3xl uppercase text-ink leading-none mb-1">
-          Toss &amp; teamsheets
-        </h2>
-        <p className="font-editorial italic text-ink-muted text-[13px] mb-6">
-          Set the toss outcome and the openers. The desk opens on confirm.
-        </p>
+    <div className="fixed inset-0 bg-ink/30 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-surface border border-hairline rounded-2xl w-full max-w-xl my-8 p-8 shadow-lift">
+        <p className="eyebrow mb-3">Open play</p>
+        <h2 className="text-h2 mb-2">Toss &amp; opening players</h2>
+        <p className="text-[14px] text-ink-soft mb-8">Set the toss and the openers — the desk opens on confirm.</p>
 
-        <div className="space-y-5">
+        <div className="space-y-6">
           {/* Toss */}
           <div>
-            <label className="label">toss won by</label>
-            <div className="grid grid-cols-2 gap-px bg-canvas-ridge">
+            <label className="label">Toss won by</label>
+            <div className="grid grid-cols-2 gap-2 p-1 bg-surface-soft rounded-lg">
               {[match.teamA, match.teamB].map(t => {
                 if (!t) return null;
                 const active = String(t.id) === tossWinner;
@@ -64,13 +58,11 @@ export function StartMatchModal({ match, onConfirm, onClose, isLoading }: Props)
                   <button
                     key={t.id}
                     onClick={() => setTossWinner(String(t.id))}
-                    className={`px-4 py-3 text-left transition-colors ${
-                      active ? 'bg-saffron-500 text-canvas' : 'bg-canvas-raised text-ink-muted hover:bg-canvas-ridge'
+                    className={`px-4 py-3 rounded-md transition-all text-[14px] font-medium ${
+                      active ? 'bg-surface text-ink shadow-soft' : 'text-ink-soft hover:text-ink'
                     }`}
                   >
-                    <div className={`font-display text-lg uppercase tracking-tight ${active ? '' : 'text-ink'}`}>
-                      {t.name}
-                    </div>
+                    {t.name}
                   </button>
                 );
               })}
@@ -79,39 +71,35 @@ export function StartMatchModal({ match, onConfirm, onClose, isLoading }: Props)
 
           {tossWinner && (
             <div>
-              <label className="label">elected to</label>
-              <div className="grid grid-cols-2 gap-px bg-canvas-ridge">
+              <label className="label">Elected to</label>
+              <div className="grid grid-cols-2 gap-2 p-1 bg-surface-soft rounded-lg">
                 {(['bat', 'bowl'] as const).map(opt => {
                   const active = electedTo === opt;
                   return (
                     <button
                       key={opt}
                       onClick={() => setElectedTo(opt)}
-                      className={`px-4 py-3 transition-colors ${
-                        active ? 'bg-ochre-500 text-canvas' : 'bg-canvas-raised text-ink-muted hover:bg-canvas-ridge'
+                      className={`px-4 py-3 rounded-md transition-all text-[14px] font-medium capitalize ${
+                        active ? 'bg-surface text-ink shadow-soft' : 'text-ink-soft hover:text-ink'
                       }`}
                     >
-                      <div className={`font-display text-lg uppercase tracking-widest2 ${active ? '' : 'text-ink'}`}>
-                        {opt}
-                      </div>
+                      {opt}
                     </button>
                   );
                 })}
               </div>
               {battingTeam && (
-                <p className="font-editorial italic text-ink-muted text-[13px] mt-2">
-                  <span className="text-saffron-500 not-italic font-display uppercase tracking-widest2 text-[11px]">batting:</span>{' '}
-                  <strong className="text-ink not-italic font-body">{battingTeam.name}</strong>
+                <p className="text-[13px] text-ink-soft mt-2">
+                  <strong className="text-ink font-medium">{battingTeam.name}</strong> bats first.
                 </p>
               )}
             </div>
           )}
 
-          {/* Openers */}
           {battingTeam?.players && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="label">opening bat · 1</label>
+                <label className="label">Opening bat 1</label>
                 <select className="input" value={batsman1} onChange={e => setBatsman1(e.target.value)}>
                   <option value="">Select…</option>
                   {battingTeam.players.map((p: Player) => (
@@ -120,7 +108,7 @@ export function StartMatchModal({ match, onConfirm, onClose, isLoading }: Props)
                 </select>
               </div>
               <div>
-                <label className="label">opening bat · 2</label>
+                <label className="label">Opening bat 2</label>
                 <select className="input" value={batsman2} onChange={e => setBatsman2(e.target.value)}>
                   <option value="">Select…</option>
                   {battingTeam.players.map((p: Player) => (
@@ -133,7 +121,7 @@ export function StartMatchModal({ match, onConfirm, onClose, isLoading }: Props)
 
           {bowlingTeam?.players && (
             <div>
-              <label className="label">opening bowler</label>
+              <label className="label">Opening bowler</label>
               <select className="input" value={bowler} onChange={e => setBowler(e.target.value)}>
                 <option value="">Select…</option>
                 {bowlingTeam.players.map((p: Player) => (
@@ -144,10 +132,10 @@ export function StartMatchModal({ match, onConfirm, onClose, isLoading }: Props)
           )}
         </div>
 
-        <div className="flex gap-2 justify-end pt-5 mt-5 border-t border-canvas-ridge">
-          <button onClick={onClose} className="btn-ghost btn-sm">Cancel</button>
+        <div className="flex gap-2 justify-end pt-6 mt-8 border-t border-hairline">
+          <button onClick={onClose} className="btn-ghost">Cancel</button>
           <button onClick={handleConfirm} disabled={!canSubmit || isLoading} className="btn-primary">
-            {isLoading ? 'Opening desk…' : 'Begin play →'}
+            {isLoading ? 'Opening…' : 'Begin play →'}
           </button>
         </div>
       </div>

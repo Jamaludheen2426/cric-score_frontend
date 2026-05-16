@@ -13,95 +13,93 @@ export function ScoreHeader({ liveData, match }: Props) {
   const completedInnings = liveData.innings.find(i => i.status === 'completed');
   if (!currentInnings) return null;
 
-  const isSecondInnings = currentInnings.innings_number === 2;
+  const isSecond = currentInnings.innings_number === 2;
   const runsNeeded = currentInnings.target ? currentInnings.target - currentInnings.total_runs : null;
   const totalBalls = match.total_overs * 6;
-  const ballsBowled = Math.floor(currentInnings.total_overs_bowled) * 6 + Math.round((currentInnings.total_overs_bowled % 1) * 10);
+  const ballsBowled =
+    Math.floor(currentInnings.total_overs_bowled) * 6 +
+    Math.round((currentInnings.total_overs_bowled % 1) * 10);
   const ballsLeft = totalBalls - ballsBowled;
-  const battingShort = (currentInnings.battingTeam?.name || '?').trim().slice(0, 3).toUpperCase();
 
   return (
-    <section className="slab-accent reveal">
-      {/* Top meta row */}
-      <div className="flex items-center justify-between mb-5">
+    <section className="card rise">
+      {/* Top meta */}
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <span className="badge-live"><span className="live-dot" /> live</span>
-          <span className="font-mono text-[10px] text-ink-dim uppercase tracking-widest">
-            innings {currentInnings.innings_number} of 2
+          <span className="badge-live"><span className="live-dot" /> Live</span>
+          <span className="text-[12px] text-ink-soft">
+            Innings {currentInnings.innings_number} of 2
           </span>
         </div>
         {completedInnings && (
-          <div className="text-right font-mono text-[12px] text-ink-muted">
+          <div className="text-right text-[13px]">
             <span className="eyebrow mr-2">{completedInnings.battingTeam?.name}</span>
-            <span className="text-ink">{getScoreDisplay(completedInnings)}</span>
-            <span className="text-ink-dim"> ({formatOvers(completedInnings.total_overs_bowled)})</span>
+            <span className="text-ink font-mono">{getScoreDisplay(completedInnings)}</span>
+            <span className="text-ink-mute font-mono"> ({formatOvers(completedInnings.total_overs_bowled)})</span>
           </div>
         )}
       </div>
 
-      {/* HERO score block */}
-      <div className="grid md:grid-cols-[1fr_auto] gap-6 items-end mb-6">
+      {/* Hero score */}
+      <div className="grid md:grid-cols-[1fr_auto] gap-8 items-end mb-8">
         <div>
-          <div className="flex items-baseline gap-3 mb-2">
-            <span className="font-display font-black text-2xl text-saffron-500 uppercase tracking-tight">
-              {battingShort}
-            </span>
-            <span className="font-editorial italic text-[13px] text-ochre-500">batting · {currentInnings.battingTeam?.name}</span>
-          </div>
-          <div className="flex items-baseline gap-4">
+          <p className="text-[14px] text-ink-soft mb-3">
+            <span className="serif-italic text-ink">{currentInnings.battingTeam?.name}</span>
+            <span className="text-ink-mute"> · batting</span>
+          </p>
+          <div className="flex items-baseline gap-3">
             <span className="num-mega">{currentInnings.total_runs}</span>
-            <span className="num-lg text-ink-muted">/{currentInnings.total_wickets}</span>
+            <span className="num-xl text-ink-soft">/{currentInnings.total_wickets}</span>
           </div>
-          <div className="mt-2 font-mono text-[15px] text-ink-muted">
+          <p className="mt-3 font-mono text-[15px] text-ink-soft">
             <span className="text-ink">{formatOvers(currentInnings.total_overs_bowled)}</span>
-            <span className="text-ink-dim"> / {match.total_overs} ov</span>
-          </div>
+            <span className="text-ink-mute"> / {match.total_overs} overs</span>
+          </p>
         </div>
 
-        {isSecondInnings && runsNeeded !== null && (
-          <div className="md:text-right border-l-2 md:border-l border-canvas-ridge md:pl-6 pl-0 pt-3 md:pt-0 md:border-t-0 border-t">
-            <div className="eyebrow mb-1.5">{runsNeeded <= 0 ? 'Result' : 'To win'}</div>
+        {isSecond && runsNeeded !== null && (
+          <div className="md:text-right md:border-l border-t md:border-t-0 border-hairline md:pl-8 pt-5 md:pt-0">
+            <p className="eyebrow mb-2">{runsNeeded <= 0 ? 'Result' : 'To win'}</p>
             {runsNeeded <= 0 ? (
-              <div className="font-display text-3xl uppercase text-pitch-400">Chased</div>
+              <p className="num-xl text-pitch">Won</p>
             ) : (
               <>
-                <div className="num-lg text-ink">{runsNeeded}</div>
-                <div className="font-mono text-[12px] text-ink-muted">
-                  in {ballsLeft} balls
-                </div>
+                <p className="num-xl">{runsNeeded}</p>
+                <p className="text-[13px] text-ink-soft mt-1">in {ballsLeft} balls</p>
               </>
             )}
           </div>
         )}
       </div>
 
-      {/* Stats strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-canvas-ridge border-t border-canvas-ridge">
-        <Stat label="run rate"  value={currentInnings.run_rate != null ? formatRate(currentInnings.run_rate) : '0.00'} />
-        {isSecondInnings ? (
+      {/* Stat strip */}
+      <div className="grid grid-cols-2 md:grid-cols-4 border-t border-hairline">
+        <Stat label="Run rate" value={currentInnings.run_rate != null ? formatRate(currentInnings.run_rate) : '0.00'} />
+        {isSecond ? (
           <>
-            <Stat label="target"   value={String(currentInnings.target || '—')} />
-            <Stat label="req rate" value={currentInnings.required_rate != null && currentInnings.required_rate > 0 ? formatRate(currentInnings.required_rate) : '—'} accent="saffron" />
+            <Stat label="Target"   value={String(currentInnings.target || '—')} />
+            <Stat label="Req rate" value={currentInnings.required_rate != null && currentInnings.required_rate > 0
+              ? formatRate(currentInnings.required_rate) : '—'} accent />
           </>
         ) : (
           <>
-            <Stat label="batting"  value={`vs ${(currentInnings.bowlingTeam?.name || '').slice(0,8)}`} mono />
-            <Stat label="extras"   value={String(currentInnings.extras)} />
+            <Stat label="Bowling"  value={(currentInnings.bowlingTeam?.name || '').slice(0, 14)} mono />
+            <Stat label="Extras"   value={String(currentInnings.extras)} />
           </>
         )}
-        <Stat label="overs left" value={String(match.total_overs - Math.floor(currentInnings.total_overs_bowled))} />
+        <Stat label="Overs left" value={String(Math.max(0, match.total_overs - Math.floor(currentInnings.total_overs_bowled)))} />
       </div>
     </section>
   );
 }
 
-function Stat({ label, value, accent, mono }: { label: string; value: string; accent?: 'saffron'; mono?: boolean }) {
+function Stat({ label, value, accent, mono }: { label: string; value: string; accent?: boolean; mono?: boolean }) {
   return (
-    <div className="bg-canvas-raised px-4 py-3">
-      <div className="eyebrow mb-1">{label}</div>
-      <div className={`${mono ? 'font-mono text-[15px]' : 'font-display text-2xl'} leading-none ${accent === 'saffron' ? 'text-saffron-500' : 'text-ink'}`}>
+    <div className="px-1 py-5 border-r last:border-r-0 border-hairline first:pl-0 sm:pl-5">
+      <p className="stat-label mb-2">{label}</p>
+      <p className={`${mono ? 'font-mono text-[14px]' : 'stat-value'} ${accent ? 'text-accent' : ''}`}>
         {value}
-      </div>
+      </p>
     </div>
   );
 }

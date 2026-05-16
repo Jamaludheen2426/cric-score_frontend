@@ -3,15 +3,15 @@
 import { useState } from 'react';
 import { Player, WicketType } from '@/types';
 
-const WICKET_TYPES: { value: WicketType; label: string; abbr: string }[] = [
-  { value: 'bowled',            label: 'Bowled',            abbr: 'b' },
-  { value: 'caught',            label: 'Caught',            abbr: 'c' },
-  { value: 'lbw',               label: 'LBW',               abbr: 'lbw' },
-  { value: 'run_out',           label: 'Run out',           abbr: 'r/o' },
-  { value: 'stumped',           label: 'Stumped',           abbr: 'st' },
-  { value: 'hit_wicket',        label: 'Hit wicket',        abbr: 'hw' },
-  { value: 'obstructing_field', label: 'Obstructing field', abbr: 'obs' },
-  { value: 'retired',           label: 'Retired',           abbr: 'ret' },
+const WICKET_TYPES: { value: WicketType; label: string }[] = [
+  { value: 'bowled',            label: 'Bowled' },
+  { value: 'caught',            label: 'Caught' },
+  { value: 'lbw',               label: 'LBW' },
+  { value: 'run_out',           label: 'Run out' },
+  { value: 'stumped',           label: 'Stumped' },
+  { value: 'hit_wicket',        label: 'Hit wicket' },
+  { value: 'obstructing_field', label: 'Obstructing' },
+  { value: 'retired',           label: 'Retired' },
 ];
 
 interface Props {
@@ -38,84 +38,76 @@ export function WicketModal({ batsmen, newBatsmenPool, onConfirm, onClose }: Pro
   };
 
   return (
-    <div className="fixed inset-0 bg-canvas/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-canvas-raised border w-full max-w-lg slab-accent" style={{ borderColor: 'rgba(204,75,75,0.35)' }}>
-        <div className="overline" style={{ color: '#CC4B4B' }}>he&apos;s gone</div>
-        <h2 className="font-display text-4xl uppercase text-ink leading-none mt-2">Wicket.</h2>
-        <p className="font-editorial italic text-ink-muted text-[13px] mt-2 mb-5">
-          File the mode of dismissal and the next man in.
-        </p>
+    <div className="fixed inset-0 bg-ink/30 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-surface border border-hairline rounded-2xl w-full max-w-xl my-8 p-8 shadow-lift">
+        <p className="eyebrow mb-3 text-wicket">Wicket</p>
+        <h2 className="text-h2 mb-2">How was the batsman dismissed?</h2>
+        <p className="text-[14px] text-ink-soft mb-6">File the mode and the next man in.</p>
 
-        {/* Dismissal type */}
-        <div className="mb-5">
-          <label className="label">mode of dismissal</label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-canvas-ridge">
-            {WICKET_TYPES.map(wt => {
-              const active = wicketType === wt.value;
-              return (
-                <button
-                  key={wt.value}
-                  onClick={() => setWicketType(wt.value)}
-                  className={`px-3 py-2.5 text-left transition-colors ${
-                    active ? 'bg-wicket-500 text-ink' : 'bg-canvas-raised text-ink-muted hover:bg-canvas-ridge'
-                  }`}
-                >
-                  <div className={`font-display text-[13px] uppercase tracking-wider ${active ? '' : 'text-ink'}`}>
+        <div className="space-y-6">
+          <div>
+            <label className="label">Mode of dismissal</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {WICKET_TYPES.map(wt => {
+                const active = wicketType === wt.value;
+                return (
+                  <button
+                    key={wt.value}
+                    onClick={() => setWicketType(wt.value)}
+                    className={`px-3 py-2.5 rounded-md text-[13px] font-medium transition-all border ${
+                      active ? 'bg-wicket text-white border-wicket'
+                            : 'bg-surface text-ink border-hairline-strong hover:border-ink'
+                    }`}
+                  >
                     {wt.label}
-                  </div>
-                  <div className={`font-mono text-[9px] uppercase tracking-widest ${active ? 'text-ink/70' : 'text-ink-dim'}`}>
-                    {wt.abbr}
-                  </div>
-                </button>
-              );
-            })}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
 
-        {/* Dismissed batsman */}
-        <div className="mb-5">
-          <label className="label">player dismissed</label>
-          <div className="grid grid-cols-2 gap-px bg-canvas-ridge">
-            {batsmen.filter(Boolean).map(b => {
-              const active = dismissedId === b!.id;
-              return (
-                <button
-                  key={b!.id}
-                  onClick={() => setDismissedId(b!.id)}
-                  className={`px-3 py-3 text-left transition-colors ${
-                    active ? 'bg-wicket-500 text-ink' : 'bg-canvas-raised text-ink-muted hover:bg-canvas-ridge'
-                  }`}
-                >
-                  <div className={`font-display text-[15px] uppercase tracking-tight ${active ? '' : 'text-ink'}`}>
+          <div>
+            <label className="label">Player dismissed</label>
+            <div className="grid grid-cols-2 gap-2">
+              {batsmen.filter(Boolean).map(b => {
+                const active = dismissedId === b!.id;
+                return (
+                  <button
+                    key={b!.id}
+                    onClick={() => setDismissedId(b!.id)}
+                    className={`px-4 py-3 rounded-md text-[14px] font-medium transition-all border ${
+                      active ? 'bg-wicket text-white border-wicket'
+                            : 'bg-surface text-ink border-hairline-strong hover:border-ink'
+                    }`}
+                  >
                     {b!.name}
-                  </div>
-                </button>
-              );
-            })}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
+          {newBatsmenPool.length > 0 ? (
+            <div>
+              <label className="label">Next man in</label>
+              <select className="input" value={newBatsmanId} onChange={e => setNewBatsmanId(e.target.value)}>
+                <option value="">Choose…</option>
+                {newBatsmenPool.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className="p-4 rounded-md bg-accent-soft border border-accent/20">
+              <p className="text-[13px] font-medium text-accent">No batsmen left</p>
+              <p className="text-[13px] text-ink-soft mt-1">All out — the innings closes on this ball.</p>
+            </div>
+          )}
         </div>
 
-        {/* New batsman */}
-        {newBatsmenPool.length > 0 ? (
-          <div className="mb-5">
-            <label className="label">next man in</label>
-            <select className="input" value={newBatsmanId} onChange={e => setNewBatsmanId(e.target.value)}>
-              <option value="">Choose…</option>
-              {newBatsmenPool.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-        ) : (
-          <div className="mb-5 p-3 border-l-2 border-saffron-500 bg-canvas-deep">
-            <p className="font-mono text-[10px] text-saffron-500 uppercase tracking-widest">no batsmen left</p>
-            <p className="font-editorial italic text-ink-muted text-[13px] mt-1">All out — the innings closes on this delivery.</p>
-          </div>
-        )}
-
-        <div className="flex gap-2 justify-end pt-2 border-t border-canvas-ridge">
-          <button onClick={onClose} className="btn-ghost btn-sm">Cancel</button>
-          <button onClick={handleConfirm} className="btn-danger btn-sm">Confirm wicket →</button>
+        <div className="flex gap-2 justify-end pt-6 mt-8 border-t border-hairline">
+          <button onClick={onClose} className="btn-ghost">Cancel</button>
+          <button onClick={handleConfirm} className="btn-danger">Confirm wicket →</button>
         </div>
       </div>
     </div>

@@ -10,75 +10,69 @@ export function TeamsContent() {
   const { data: teams, isLoading } = useTeams();
   const deleteTeam = useDeleteTeam();
 
-  if (isLoading) return <PageLoader label="Calling the rosters" />;
+  if (isLoading) return <PageLoader label="Loading teams" />;
 
   return (
     <div className="page">
-      {/* Masthead */}
-      <header className="grid lg:grid-cols-12 items-end gap-6 mb-12 pb-8 border-b-2 border-ink">
-        <div className="lg:col-span-8">
-          <div className="overline mb-3">section iii — the dressing room</div>
-          <h1 className="font-display text-[clamp(54px,8vw,108px)] uppercase leading-[0.85] text-ink">
-            Team&nbsp;
-            <span className="font-editorial italic font-normal text-ochre-500">sheet</span>
+      <header className="flex flex-wrap items-end justify-between gap-6 mb-16">
+        <div>
+          <p className="eyebrow mb-4">Teams</p>
+          <h1 className="text-title">
+            Your <span className="serif-italic font-normal text-ink-soft">squads.</span>
           </h1>
         </div>
-        <div className="lg:col-span-4 flex items-end justify-between lg:justify-end gap-6">
-          <div className="stat text-right">
-            <span className="stat-label">registered</span>
-            <span className="stat-value">{teams?.length || 0}</span>
-          </div>
-          <Link href="/teams/create" className="btn-primary">+ New side</Link>
-        </div>
+        <Link href="/teams/create" className="btn-primary">
+          New team
+        </Link>
       </header>
 
       {!teams?.length ? (
-        <div className="slab text-center py-20">
-          <div className="overline mb-4">no rosters on file</div>
-          <p className="font-display text-3xl uppercase text-ink mb-2">The dressing room is empty.</p>
-          <p className="text-ink-muted mb-8">Register the first side to assemble a squad.</p>
-          <Link href="/teams/create" className="btn-primary btn-lg">Register a team →</Link>
+        <div className="card text-center py-20">
+          <p className="text-h3 mb-3">No teams yet.</p>
+          <p className="text-ink-soft mb-8 max-w-md mx-auto">
+            Register a side and add the players. Teams can be used in any match.
+          </p>
+          <Link href="/teams/create" className="btn-primary btn-lg">
+            Register a team
+          </Link>
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-canvas-ridge">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {teams.map((team: Team, i: number) => (
             <article
               key={team.id}
-              className="bg-canvas-raised p-7 flex flex-col justify-between group relative overflow-hidden hover:bg-canvas-ridge/30 transition-colors reveal"
+              className="card group relative overflow-hidden hover:shadow-lift hover:border-hairline-strong transition-all rise"
               style={{ animationDelay: `${Math.min(i * 50, 400)}ms` }}
             >
               <button
-                onClick={() => confirm('Strike this side from the register?') && deleteTeam.mutate(team.id)}
-                className="absolute top-4 right-4 p-2 text-ink-dim hover:text-wicket-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => confirm('Delete this team?') && deleteTeam.mutate(team.id)}
+                className="absolute top-5 right-5 p-2 rounded-md text-ink-mute hover:text-wicket hover:bg-wicket-soft opacity-0 group-hover:opacity-100 transition-all"
                 aria-label="Delete team"
               >
                 <Trash2 size={14} />
               </button>
 
-              <div>
-                <div className="flex items-baseline gap-3 mb-5">
-                  <span className="font-mono text-[10px] text-ink-dim uppercase tracking-widest">
-                    side·{String(team.id).padStart(2, '0')}
-                  </span>
-                  <span className="overline">registered</span>
-                </div>
+              <p className="eyebrow mb-4">Squad · {String(team.id).padStart(2, '0')}</p>
 
-                <h3 className="font-display text-4xl uppercase text-ink mb-4 leading-none break-words">
+              <Link href={`/teams/${team.id}`} className="block">
+                <h3 className="text-h2 mb-6 group-hover:text-accent transition-colors break-words">
                   {team.name}
                 </h3>
+              </Link>
 
-                <div className="flex items-baseline gap-3">
-                  <span className="num-lg text-saffron-500">{team.players?.length || 0}</span>
-                  <span className="eyebrow">player{(team.players?.length || 0) === 1 ? '' : 's'}</span>
-                </div>
+              <div className="flex items-baseline gap-3 pb-6 border-b border-hairline">
+                <span className="num-xl text-ink">{team.players?.length || 0}</span>
+                <span className="text-[14px] text-ink-soft">
+                  {(team.players?.length || 0) === 1 ? 'player' : 'players'}
+                </span>
               </div>
 
               <Link
                 href={`/teams/${team.id}`}
-                className="mt-8 inline-flex items-center gap-2 text-ink hover:text-saffron-500 font-display uppercase tracking-widest2 text-[12px] border-t border-canvas-ridge pt-4 transition-colors"
+                className="mt-5 inline-flex items-center gap-2 text-[14px] font-medium text-ink-soft hover:text-accent transition-colors"
               >
-                <span>Manage squad</span>
-                <span className="transition-transform group-hover:translate-x-1">→</span>
+                Manage roster
+                <span className="transition-transform group-hover:translate-x-0.5">→</span>
               </Link>
             </article>
           ))}

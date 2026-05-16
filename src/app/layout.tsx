@@ -4,8 +4,8 @@ import { Providers } from './providers';
 import { Nav } from '@/components/Nav';
 
 export const metadata: Metadata = {
-  title: 'CRICKET SCORER — Press Box',
-  description: 'Live cricket scoring, broadcast-grade scorecards.',
+  title: 'Cricket Scorer',
+  description: 'A calm, modern way to score and follow a cricket match.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -14,12 +14,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Providers>
           <Nav />
-          <main className="relative z-10">{children}</main>
-          <footer className="relative z-10 mt-24 border-t border-canvas-ridge">
-            <div className="page py-8 flex flex-wrap items-baseline justify-between gap-4">
-              <p className="overline">est. 2026 — the press box</p>
-              <p className="font-mono text-[11px] text-ink-dim uppercase tracking-widest">
-                no umpires were harmed in the making of this scorecard
+          <main>{children}</main>
+          <footer className="border-t border-hairline mt-20">
+            <div className="page-wide py-10 flex flex-wrap items-baseline justify-between gap-4">
+              <p className="text-[13px] text-ink-soft">
+                Cricket Scorer · a quiet scoring desk.
+              </p>
+              <p className="text-[12px] text-ink-mute font-mono">
+                v 1.0
               </p>
             </div>
           </footer>

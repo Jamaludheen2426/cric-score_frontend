@@ -10,19 +10,19 @@ export function EndMatchControls({ matchStatus, onEndMatch, isLoading }: Props) 
   if (matchStatus !== 'live') return null;
 
   return (
-    <section className="slab-accent muted">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <section className="card-soft rise rise-d4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <div className="overline">desk closeout</div>
-          <p className="font-display text-lg uppercase text-ink mt-1">Hand the match to the archive.</p>
-          <p className="font-editorial italic text-ink-muted text-[12px]">Closes scoring and files the final card.</p>
+          <p className="eyebrow mb-2">Wrap up</p>
+          <p className="text-h3 mb-1">End the match.</p>
+          <p className="text-[13px] text-ink-soft">Closes scoring and files the final scorecard.</p>
         </div>
         <button
-          onClick={() => confirm('Close the match and file the final scorecard?') && onEndMatch()}
+          onClick={() => confirm('End the match and file the final scorecard?') && onEndMatch()}
           disabled={isLoading}
           className="btn-danger"
         >
-          {isLoading ? 'Filing…' : 'End match'}
+          {isLoading ? 'Ending…' : 'End match'}
         </button>
       </div>
     </section>

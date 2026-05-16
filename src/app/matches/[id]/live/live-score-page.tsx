@@ -20,9 +20,7 @@ export function LiveScorePage({ matchId }: { matchId: number }) {
     const url = `${API_URL.replace('/api', '')}/api/matches/events/${match.share_token}`;
     const es = new EventSource(url);
     es.onopen = () => setConnected(true);
-    es.onmessage = (e) => {
-      try { setLiveData(JSON.parse(e.data)); } catch (_) {}
-    };
+    es.onmessage = (e) => { try { setLiveData(JSON.parse(e.data)); } catch (_) {} };
     es.onerror = () => setConnected(false);
     return () => es.close();
   }, [match?.share_token]);
@@ -34,35 +32,32 @@ export function LiveScorePage({ matchId }: { matchId: number }) {
   };
 
   if (isLoading) return <PageLoader label="Tuning the broadcast" />;
-  if (!match) return <div className="page text-ink-muted">No match on file.</div>;
+  if (!match) return <div className="page text-ink-soft">Match not found.</div>;
 
   return (
-    <div className="page max-w-[1280px]">
-      {/* Masthead */}
-      <header className="grid lg:grid-cols-[1fr_auto] gap-4 items-end mb-8 pb-6 border-b-2 border-ink">
+    <div className="page">
+      <header className="flex flex-wrap items-end justify-between gap-6 mb-12 pb-8 border-b border-hairline">
         <div>
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3 mb-3">
             <span className={`live-dot ${connected ? '' : 'opacity-30'}`} />
-            <span className="overline">{connected ? 'on air' : 'reconnecting…'}</span>
-            <Link href="/matches" className="font-mono text-[10px] text-ink-dim uppercase tracking-widest hover:text-saffron-500">
-              ← all fixtures
+            <p className="eyebrow">{connected ? 'On air' : 'Reconnecting…'}</p>
+            <Link href="/matches" className="text-[12px] text-ink-mute hover:text-ink">
+              ← All fixtures
             </Link>
           </div>
-          <h1 className="font-display text-[clamp(36px,5vw,72px)] uppercase leading-[0.9] text-ink">
-            {match.title}
-          </h1>
-          <div className="mt-2 flex items-baseline gap-3 text-ink-muted">
-            <span className="text-ink font-body">{match.teamA?.name}</span>
-            <span className="font-editorial italic text-ochre-500">vs</span>
-            <span className="text-ink font-body">{match.teamB?.name}</span>
+          <h1 className="text-title mb-3">{match.title}</h1>
+          <div className="flex items-baseline gap-2.5 text-[15px] text-ink-soft">
+            <span className="text-ink">{match.teamA?.name}</span>
+            <span className="serif-italic text-ink-mute">vs</span>
+            <span className="text-ink">{match.teamB?.name}</span>
           </div>
         </div>
-        <button onClick={copyShareLink} className="btn-ghost btn-sm">
-          {copied ? '✓ Copied' : 'Share this ticker'}
+        <button onClick={copyShareLink} className="btn-secondary btn-sm">
+          {copied ? 'Copied' : 'Share this ticker'}
         </button>
       </header>
 
-      {!liveData && <PageLoader label="Connecting to the wire" />}
+      {!liveData && <PageLoader label="Connecting" />}
       {liveData && <LiveScoreCard liveData={liveData} match={match} />}
     </div>
   );

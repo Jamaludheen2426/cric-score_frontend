@@ -15,33 +15,34 @@ export function BowlerStats({ bowler, over, bowlingCards }: Props) {
     : '—';
 
   return (
-    <section className="slab">
-      <header className="flex items-center justify-between mb-4">
-        <span className="overline">on the mark</span>
-        <span className="eyebrow">bowling</span>
+    <section className="card rise rise-d2">
+      <header className="flex items-center justify-between mb-5">
+        <h3 className="text-h3">Bowling</h3>
+        <span className="eyebrow">at the mark</span>
       </header>
 
-      <div className="grid grid-cols-[1fr_44px_44px_44px_56px] gap-2 pb-2 mb-1 border-b border-canvas-ridge">
-        <span className="eyebrow">bowler</span>
+      <div className="grid grid-cols-[1fr_44px_44px_44px_56px] gap-3 pb-3 mb-1 border-b border-hairline">
+        <span className="eyebrow">Bowler</span>
         <span className="eyebrow text-right">O</span>
         <span className="eyebrow text-right">R</span>
         <span className="eyebrow text-right">W</span>
         <span className="eyebrow text-right">Econ</span>
       </div>
 
-      <div className="grid grid-cols-[1fr_44px_44px_44px_56px] gap-2 items-baseline py-3 -mx-2 px-2 border-l-2 border-saffron-500 bg-saffron-500/[0.06]">
+      <div className="grid grid-cols-[1fr_44px_44px_44px_56px] gap-3 items-baseline py-4">
         <div className="min-w-0">
-          <div className="font-display text-[18px] uppercase tracking-tight text-ink truncate">
-            {bowler.name}
+          <div className="flex items-baseline gap-2">
+            <span className="text-accent text-[9px]">●</span>
+            <span className="font-medium text-[15px] text-ink truncate">{bowler.name}</span>
           </div>
-          <div className="font-mono text-[10px] text-ink-dim uppercase tracking-widest mt-1">
-            ball {over.legal_balls}/6 · over {over.over_number}
+          <div className="text-[12px] text-ink-mute mt-1">
+            Ball {over.legal_balls}/6 · Over {over.over_number}
           </div>
         </div>
-        <span className="num-md text-ink text-right">{card?.overs?.toFixed(1) ?? '0.0'}</span>
-        <span className="num-md text-ink text-right">{card?.runs ?? 0}</span>
-        <span className="num-md text-saffron-500 text-right">{card?.wickets ?? 0}</span>
-        <span className="num-sm text-ink-muted text-right">{economy}</span>
+        <span className="num-md text-right">{card?.overs?.toFixed(1) ?? '0.0'}</span>
+        <span className="num-md text-right">{card?.runs ?? 0}</span>
+        <span className="num-md text-accent text-right">{card?.wickets ?? 0}</span>
+        <span className="num-sm text-right">{economy}</span>
       </div>
     </section>
   );

@@ -33,8 +33,6 @@ export function CreateMatchContent() {
     setTimeout(() => setPinCopied(false), 1800);
   };
 
-  const regeneratePin = () => set('scorer_pin', generatePin());
-
   const handleSubmit = async () => {
     if (!form.title || !form.team_a_id || !form.team_b_id) return alert('Please fill all required fields');
     if (form.team_a_id === form.team_b_id) return alert('Teams must be different');
@@ -49,32 +47,31 @@ export function CreateMatchContent() {
     router.push(`/matches/${match.id}/score`);
   };
 
-  if (isLoading) return <PageLoader label="Calling the dressing room" />;
+  if (isLoading) return <PageLoader label="Loading teams" />;
 
   return (
     <div className="page-narrow">
-      {/* Masthead */}
-      <header className="mb-10 pb-6 border-b-2 border-ink">
-        <Link href="/matches" className="overline hover:text-saffron-500 inline-block mb-3">
-          ← back to fixtures
+      <header className="mb-14">
+        <Link href="/matches" className="text-[13px] text-ink-mute hover:text-ink mb-6 inline-block">
+          ← Back to matches
         </Link>
-        <h1 className="font-display text-[clamp(44px,6.5vw,84px)] uppercase leading-[0.85] text-ink">
-          Open a&nbsp;
-          <span className="font-editorial italic font-normal text-ochre-500">new</span>&nbsp;card
+        <p className="eyebrow mb-4">New match</p>
+        <h1 className="text-title">
+          Set up your <span className="serif-italic font-normal text-ink-soft">fixture.</span>
         </h1>
       </header>
 
-      <div className="space-y-px bg-canvas-ridge">
-        {/* PART I — IDENTITY */}
-        <section className="bg-canvas-raised p-7 reveal">
-          <div className="flex items-baseline gap-3 mb-6">
-            <span className="font-mono text-[11px] text-saffron-500 uppercase tracking-widest">part i</span>
-            <h2 className="font-display text-2xl uppercase text-ink">Fixture identity</h2>
-          </div>
+      <div className="space-y-10">
+        {/* DETAILS */}
+        <section>
+          <header className="mb-6">
+            <h2 className="text-h3 mb-1">Match details</h2>
+            <p className="text-[14px] text-ink-soft">Name the match and choose the two sides.</p>
+          </header>
 
           <div className="space-y-5">
             <div>
-              <label className="label">Match title *</label>
+              <label className="label">Match title</label>
               <input
                 className="input"
                 value={form.title}
@@ -82,17 +79,17 @@ export function CreateMatchContent() {
                 placeholder="e.g. Final — Season 2026"
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-end gap-4">
+            <div className="grid sm:grid-cols-[1fr_auto_1fr] items-end gap-4">
               <div>
-                <label className="label">Side A *</label>
+                <label className="label">Team A</label>
                 <select className="input" value={form.team_a_id} onChange={e => set('team_a_id', e.target.value)}>
                   <option value="">Select…</option>
                   {teams?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
               </div>
-              <div className="font-editorial italic text-ochre-500 text-2xl pb-3 text-center">vs</div>
+              <div className="serif-italic text-ink-mute text-xl pb-3 text-center hidden sm:block">vs</div>
               <div>
-                <label className="label">Side B *</label>
+                <label className="label">Team B</label>
                 <select className="input" value={form.team_b_id} onChange={e => set('team_b_id', e.target.value)}>
                   <option value="">Select…</option>
                   {teams?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -102,12 +99,14 @@ export function CreateMatchContent() {
           </div>
         </section>
 
-        {/* PART II — RULES */}
-        <section className="bg-canvas-raised p-7 reveal reveal-d1">
-          <div className="flex items-baseline gap-3 mb-6">
-            <span className="font-mono text-[11px] text-saffron-500 uppercase tracking-widest">part ii</span>
-            <h2 className="font-display text-2xl uppercase text-ink">Conditions of play</h2>
-          </div>
+        <div className="hr" />
+
+        {/* RULES */}
+        <section>
+          <header className="mb-6">
+            <h2 className="text-h3 mb-1">Conditions of play</h2>
+            <p className="text-[14px] text-ink-soft">Overs, squad size, and the death-overs rule.</p>
+          </header>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
@@ -121,7 +120,7 @@ export function CreateMatchContent() {
                 value={form.players_per_side} onChange={e => set('players_per_side', Number(e.target.value))} />
             </div>
             <div>
-              <label className="label">Death overs from</label>
+              <label className="label">Death from</label>
               <input className="input-mono text-center text-xl" type="number" min={1}
                 value={form.death_overs_from} onChange={e => set('death_overs_from', e.target.value)} placeholder="—" />
             </div>
@@ -135,40 +134,38 @@ export function CreateMatchContent() {
           </div>
         </section>
 
-        {/* PART III — SCORER PIN */}
-        <section className="bg-canvas-raised p-7 reveal reveal-d2">
-          <div className="flex items-baseline gap-3 mb-2">
-            <span className="font-mono text-[11px] text-saffron-500 uppercase tracking-widest">part iii</span>
-            <h2 className="font-display text-2xl uppercase text-ink">The scorer&apos;s key</h2>
-          </div>
-          <p className="text-ink-muted text-sm mb-5 font-editorial italic">
-            Issued once. Guards every entry into the scoring desk.
-          </p>
+        <div className="hr" />
+
+        {/* PIN */}
+        <section>
+          <header className="mb-6">
+            <h2 className="text-h3 mb-1">Scorer key</h2>
+            <p className="text-[14px] text-ink-soft">Share with the scorer. The desk asks for this on entry.</p>
+          </header>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1 relative">
+            <div className="flex-1">
               <input
-                className="input-mono text-center text-4xl tracking-[0.6em] text-saffron-500 py-4"
+                className="input-mono text-center text-3xl tracking-[0.55em] py-5 text-accent"
                 value={form.scorer_pin}
                 onChange={e => set('scorer_pin', e.target.value)}
                 maxLength={6}
               />
             </div>
-            <button onClick={regeneratePin} className="btn-ghost" title="Reissue key">
-              <RefreshCw size={16} /> Reissue
+            <button onClick={() => set('scorer_pin', generatePin())} className="btn-secondary">
+              <RefreshCw size={15} /> Regenerate
             </button>
-            <button onClick={copyPin} className="btn-ghost" title="Copy to clipboard">
-              {pinCopied ? <><Check size={16} className="text-saffron-500" /> Copied</> : <><Copy size={16} /> Copy</>}
+            <button onClick={copyPin} className="btn-secondary">
+              {pinCopied ? <><Check size={15} /> Copied</> : <><Copy size={15} /> Copy</>}
             </button>
           </div>
         </section>
       </div>
 
-      {/* SUBMIT */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mt-8 pt-6 border-t-2 border-ink">
+      <div className="flex flex-wrap items-center justify-between gap-3 mt-14 pt-8 border-t border-hairline">
         <Link href="/matches" className="btn-ghost">Cancel</Link>
         <button onClick={handleSubmit} disabled={createMatch.isPending} className="btn-primary btn-lg">
-          {createMatch.isPending ? 'Filing…' : 'File this card →'}
+          {createMatch.isPending ? 'Creating…' : 'Create match →'}
         </button>
       </div>
     </div>

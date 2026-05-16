@@ -16,7 +16,7 @@ export function SummaryContent({ matchId }: { matchId: number }) {
   });
 
   if (matchLoading || scoreLoading) return <PageLoader label="Pulling the archived card" />;
-  if (!match || !liveData) return <div className="page text-ink-muted">Scorecard not in the file.</div>;
+  if (!match || !liveData) return <div className="page text-ink-soft">Scorecard not found.</div>;
 
   const inn1 = liveData.innings.find((i: any) => i.innings_number === 1);
   const inn2 = liveData.innings.find((i: any) => i.innings_number === 2);
@@ -34,37 +34,32 @@ export function SummaryContent({ matchId }: { matchId: number }) {
       winner = inn1.battingTeam?.name || '';
       resultText = `won by ${runs1 - runs2} run${runs1 - runs2 === 1 ? '' : 's'}`;
     } else if (runs1 === runs2) {
-      winner = '';
-      resultText = 'match tied';
+      resultText = 'Match tied';
     }
   }
 
   return (
-    <div className="page max-w-[1280px]">
-      <header className="mb-10 pb-8 border-b-2 border-ink">
-        <Link href="/matches" className="overline hover:text-saffron-500 inline-block mb-3">
-          ← back to fixtures
+    <div className="page">
+      <header className="mb-14 pb-10 border-b border-hairline">
+        <Link href="/matches" className="text-[13px] text-ink-mute hover:text-ink mb-6 inline-block">
+          ← Back to matches
         </Link>
+        <p className="eyebrow mb-4">Final scorecard</p>
         <div className="grid md:grid-cols-[1fr_auto] items-end gap-6">
           <div>
-            <div className="eyebrow mb-2">filed scorecard · the morning paper</div>
-            <h1 className="font-display text-[clamp(44px,6vw,96px)] uppercase leading-[0.85] text-ink">
-              {match.title}
-            </h1>
+            <h1 className="text-title mb-4">{match.title}</h1>
             {winner ? (
-              <div className="mt-4 chyron flex items-baseline gap-2">
-                <span className="font-display text-2xl uppercase text-saffron-500">{winner}</span>
-                <span className="font-editorial italic text-[14px] text-ink-muted">{resultText}</span>
-              </div>
+              <p className="text-[18px]">
+                <span className="text-ink font-medium">{winner}</span>
+                <span className="serif-italic text-ink-soft ml-2">{resultText}</span>
+              </p>
             ) : resultText && (
-              <div className="mt-4 chyron">
-                <span className="font-display text-2xl uppercase text-ochre-500">{resultText}</span>
-              </div>
+              <p className="text-[18px] serif-italic text-ink-soft">{resultText}</p>
             )}
           </div>
           <div className="text-right">
-            <div className="eyebrow">archive ref</div>
-            <div className="font-mono text-2xl text-ink mt-1">#{String(match.id).padStart(5, '0')}</div>
+            <p className="stat-label">Ref</p>
+            <p className="font-mono text-2xl text-ink mt-1">#{String(match.id).padStart(5, '0')}</p>
           </div>
         </div>
       </header>

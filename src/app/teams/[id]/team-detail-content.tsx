@@ -7,11 +7,11 @@ import { Player } from '@/types';
 import { Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
-const ROLE_META: Record<string, { tag: string; color: string }> = {
-  batsman:      { tag: 'bat',  color: 'text-pitch-400 border-pitch-500/40' },
-  bowler:       { tag: 'bowl', color: 'text-saffron-500 border-saffron-500/40' },
-  allrounder:   { tag: 'all',  color: 'text-ochre-500 border-ochre-500/40' },
-  wicketkeeper: { tag: 'wk',   color: 'text-ink border-ink-muted/50' },
+const ROLE_LABELS: Record<string, string> = {
+  batsman: 'Batsman',
+  bowler: 'Bowler',
+  allrounder: 'All-rounder',
+  wicketkeeper: 'Wicketkeeper',
 };
 
 export function TeamDetailContent({ teamId }: { teamId: number }) {
@@ -23,8 +23,8 @@ export function TeamDetailContent({ teamId }: { teamId: number }) {
   const [newName, setNewName] = useState('');
   const [newRole, setNewRole] = useState('batsman');
 
-  if (isLoading) return <PageLoader label="Calling the squad" />;
-  if (!team) return <div className="page text-ink-muted">Team not found.</div>;
+  if (isLoading) return <PageLoader label="Loading team" />;
+  if (!team) return <div className="page text-ink-soft">Team not found.</div>;
 
   const handleAddPlayer = async () => {
     if (!newName.trim()) return;
@@ -38,78 +38,74 @@ export function TeamDetailContent({ teamId }: { teamId: number }) {
 
   return (
     <div className="page-narrow">
-      <header className="mb-10 pb-6 border-b-2 border-ink">
-        <Link href="/teams" className="overline hover:text-saffron-500 inline-block mb-3">
-          ← back to dressing room
+      <header className="mb-14">
+        <Link href="/teams" className="text-[13px] text-ink-mute hover:text-ink mb-6 inline-block">
+          ← Back to teams
         </Link>
+        <p className="eyebrow mb-4">Team · {String(team.id).padStart(2, '0')}</p>
         <div className="flex items-end justify-between gap-6">
-          <div>
-            <div className="eyebrow mb-2">team sheet · side·{String(team.id).padStart(2, '0')}</div>
-            <h1 className="font-display text-[clamp(44px,6.5vw,84px)] uppercase leading-[0.85] text-ink">
-              {team.name}
-            </h1>
-          </div>
+          <h1 className="text-title">{team.name}</h1>
           <div className="stat text-right shrink-0">
-            <span className="stat-label">squad</span>
+            <span className="stat-label">Squad</span>
             <span className="stat-value">{team.players?.length || 0}</span>
           </div>
         </div>
       </header>
 
-      <section className="slab">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="chyron font-display text-xl uppercase tracking-widest2 text-ink">
-            Roster
-          </h2>
-          <button onClick={() => setShowAdd(!showAdd)} className="btn-ghost btn-sm">
+      <section>
+        <header className="flex items-end justify-between mb-6">
+          <h2 className="text-h3">Roster</h2>
+          <button onClick={() => setShowAdd(!showAdd)} className="btn-secondary btn-sm">
             <Plus size={14} /> {showAdd ? 'Cancel' : 'Add player'}
           </button>
-        </div>
+        </header>
 
         {showAdd && (
-          <div className="flex flex-col sm:flex-row gap-2 mb-5 p-3 bg-canvas-deep border border-saffron-500/40">
+          <div className="flex flex-col sm:flex-row gap-2 mb-6 p-2 bg-surface border border-accent/40 rounded-md">
             <input
-              className="input flex-1"
+              className="input border-0 bg-transparent flex-1 focus:shadow-none"
               placeholder="Player name"
               value={newName}
               onChange={e => setNewName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleAddPlayer()}
               autoFocus
             />
-            <select className="input w-full sm:w-44 shrink-0" value={newRole} onChange={e => setNewRole(e.target.value)}>
+            <select className="input border-0 bg-transparent w-full sm:w-44 shrink-0 focus:shadow-none" value={newRole} onChange={e => setNewRole(e.target.value)}>
               <option value="batsman">Batsman</option>
               <option value="bowler">Bowler</option>
               <option value="allrounder">All-rounder</option>
               <option value="wicketkeeper">Wicketkeeper</option>
             </select>
-            <button onClick={handleAddPlayer} disabled={createPlayer.isPending} className="btn-primary">
-              File
+            <button onClick={handleAddPlayer} disabled={createPlayer.isPending} className="btn-accent btn-sm">
+              Add
             </button>
           </div>
         )}
 
-        <div>
-          {team.players?.length ? team.players.map((player: Player, i: number) => {
-            const meta = ROLE_META[player.role || 'batsman'];
-            return (
-              <div key={player.id} className="row grid-cols-[40px_1fr_auto_36px] gap-4 group hover:bg-canvas-ridge/40 px-2 -mx-2 transition-colors">
-                <span className="font-mono text-[11px] text-ink-dim text-center">{String(i + 1).padStart(2, '0')}</span>
-                <span className="font-display text-lg uppercase text-ink tracking-tight">{player.name}</span>
-                <span className={`font-mono text-[10px] uppercase tracking-widest border px-2 py-0.5 ${meta.color}`}>
-                  {meta.tag}
-                </span>
+        {team.players?.length ? (
+          <div className="border border-hairline rounded-xl bg-surface overflow-hidden">
+            {team.players.map((player: Player, i: number) => (
+              <div
+                key={player.id}
+                className={`grid grid-cols-[40px_1fr_auto_auto] items-center gap-4 px-5 py-4 group hover:bg-surface-soft transition-colors ${
+                  i < team.players!.length - 1 ? 'border-b border-hairline' : ''
+                }`}
+              >
+                <span className="font-mono text-[12px] text-ink-mute text-center">{String(i + 1).padStart(2, '0')}</span>
+                <span className="font-medium text-[15px] text-ink">{player.name}</span>
+                <span className="text-[12px] text-ink-soft">{ROLE_LABELS[player.role || 'batsman']}</span>
                 <button
                   onClick={() => deletePlayer.mutate({ teamId, playerId: player.id })}
-                  className="p-1.5 text-ink-dim hover:text-wicket-500 opacity-0 group-hover:opacity-100 transition-all"
+                  className="p-1.5 text-ink-mute hover:text-wicket opacity-0 group-hover:opacity-100 transition-all"
                 >
-                  <Trash2 size={13} />
+                  <Trash2 size={14} />
                 </button>
               </div>
-            );
-          }) : (
-            <div className="text-center py-12 overline">no players on the sheet</div>
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center py-12 text-ink-mute">No players on the roster yet.</p>
+        )}
       </section>
     </div>
   );
