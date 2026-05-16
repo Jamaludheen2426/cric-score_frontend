@@ -1,11 +1,11 @@
-export function PageLoader({ label = 'Loading...' }: { label?: string }) {
+export function PageLoader({ label = 'Loading' }: { label?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[300px] gap-4">
-      <div className="relative w-10 h-10">
-        <div className="absolute inset-0 rounded-full border-2 border-gray-700"></div>
-        <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-pitch-500 animate-spin"></div>
+    <div className="page flex flex-col items-center justify-center min-h-[60vh] gap-5">
+      <div className="relative w-24">
+        <div className="h-px w-full bg-canvas-ridge" />
+        <div className="absolute top-0 left-0 h-px bg-saffron-500 animate-sweep w-full" />
       </div>
-      <p className="text-gray-500 text-sm font-display">{label}</p>
+      <p className="eyebrow">{label}</p>
     </div>
   );
 }

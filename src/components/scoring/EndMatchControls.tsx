@@ -10,15 +10,21 @@ export function EndMatchControls({ matchStatus, onEndMatch, isLoading }: Props) 
   if (matchStatus !== 'live') return null;
 
   return (
-    <div className="card border-rose-900/30 bg-rose-950/10">
-      <p className="text-gray-500 text-xs mb-3 font-display">Match Controls</p>
-      <button
-        onClick={() => confirm('End match and generate final scorecard?') && onEndMatch()}
-        disabled={isLoading}
-        className="btn-danger text-sm"
-      >
-        {isLoading ? 'Ending...' : 'End Match & Generate Scorecard'}
-      </button>
-    </div>
+    <section className="slab-accent muted">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="overline">desk closeout</div>
+          <p className="font-display text-lg uppercase text-ink mt-1">Hand the match to the archive.</p>
+          <p className="font-editorial italic text-ink-muted text-[12px]">Closes scoring and files the final card.</p>
+        </div>
+        <button
+          onClick={() => confirm('Close the match and file the final scorecard?') && onEndMatch()}
+          disabled={isLoading}
+          className="btn-danger"
+        >
+          {isLoading ? 'Filing…' : 'End match'}
+        </button>
+      </div>
+    </section>
   );
 }

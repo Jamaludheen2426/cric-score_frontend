@@ -15,41 +15,48 @@ export function BowlerSelectModal({ players, currentBowlerId, onSelect, onClose,
   const [selected, setSelected] = useState<number | null>(null);
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-sm shadow-2xl">
-        <div className="p-5 border-b border-gray-800">
-          <h2 className="font-display text-lg font-bold text-white">Select Next Bowler</h2>
-          <p className="text-gray-500 text-sm mt-0.5">Over complete — who bowls next?</p>
+    <div className="fixed inset-0 bg-canvas/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-canvas-raised border border-saffron-500/40 w-full max-w-md slab-accent">
+        <div className="overline mb-2">change of bowler</div>
+        <h2 className="font-display text-3xl uppercase text-ink leading-none">Next at the mark</h2>
+        <p className="font-editorial italic text-ink-muted text-[13px] mt-2 mb-5">
+          The over is complete. Pick the new bowler to keep play moving.
+        </p>
+
+        <div className="max-h-72 overflow-y-auto -mx-2 mb-4">
+          {players.map(p => {
+            const isJustBowled = p.id === currentBowlerId;
+            const isSelected = selected === p.id;
+            return (
+              <button
+                key={p.id}
+                onClick={() => setSelected(p.id)}
+                disabled={isJustBowled}
+                className={`w-full text-left px-4 py-3 transition-colors border-l-2 ${
+                  isSelected ? 'bg-saffron-500/15 border-l-saffron-500 text-ink'
+                  : isJustBowled ? 'opacity-30 cursor-not-allowed border-l-transparent text-ink-dim'
+                  : 'border-l-transparent text-ink-muted hover:bg-canvas-ridge hover:text-ink'
+                }`}
+              >
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="font-display text-lg uppercase tracking-tight">{p.name}</span>
+                  {isJustBowled && (
+                    <span className="font-mono text-[9px] text-ink-dim uppercase tracking-widest">just bowled</span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
         </div>
-        <div className="p-3 max-h-72 overflow-y-auto">
-          {players.map(p => (
-            <button
-              key={p.id}
-              onClick={() => setSelected(p.id)}
-              disabled={p.id === currentBowlerId}
-              className={`w-full text-left px-4 py-3 rounded-xl mb-1 transition-all font-display ${
-                selected === p.id
-                  ? 'bg-pitch-600/20 border border-pitch-500 text-pitch-300'
-                  : p.id === currentBowlerId
-                  ? 'opacity-30 cursor-not-allowed text-gray-600 bg-gray-800/30'
-                  : 'hover:bg-gray-800 text-gray-300 border border-transparent'
-              }`}
-            >
-              <span>{p.name}</span>
-              {p.id === currentBowlerId && (
-                <span className="ml-2 text-xs text-gray-600">(just bowled)</span>
-              )}
-            </button>
-          ))}
-        </div>
-        <div className="p-4 border-t border-gray-800 flex gap-3 justify-end">
-          <button onClick={onClose} className="btn-secondary text-sm">Cancel</button>
+
+        <div className="flex gap-2 justify-end">
+          <button onClick={onClose} className="btn-ghost btn-sm">Cancel</button>
           <button
             onClick={() => selected && onSelect(selected)}
             disabled={!selected || isLoading}
-            className="btn-primary text-sm disabled:opacity-40"
+            className="btn-primary btn-sm"
           >
-            {isLoading ? 'Saving...' : 'Confirm →'}
+            {isLoading ? 'Filing…' : 'Send him in →'}
           </button>
         </div>
       </div>

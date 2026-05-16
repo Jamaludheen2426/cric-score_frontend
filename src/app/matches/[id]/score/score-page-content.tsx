@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useMatch, useScoringActions, useLiveScore } from '@/lib/queries';
 import { PageLoader } from '@/components/PageLoader';
 import { PinGate } from '@/components/scoring/PinGate';
@@ -14,7 +15,6 @@ import { BowlerSelectModal } from '@/components/scoring/BowlerSelectModal';
 import { WicketModal } from '@/components/scoring/WicketModal';
 import { EndMatchControls } from '@/components/scoring/EndMatchControls';
 import { EndInningsModal } from '@/components/scoring/EndInningsModal';
-import { isDeathOvers } from '@/lib/utils';
 import { LiveScore, Player } from '@/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
@@ -31,15 +31,10 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
   const { data: match, isLoading } = useMatch(matchId);
   const { data: initialLiveScore } = useLiveScore(match?.share_token || '');
 
-  // Sync liveData from HTTP fetch (initial load + after mutations refetch).
-  // SSE will overwrite this with newer data as it arrives.
   useEffect(() => {
-    if (initialLiveScore) {
-      setLiveData(initialLiveScore);
-    }
+    if (initialLiveScore) setLiveData(initialLiveScore);
   }, [initialLiveScore]);
 
-  // Subscribe to SSE for real-time updates
   useEffect(() => {
     if (!match?.share_token) return;
     const url = `${API_URL.replace('/api', '')}/api/matches/events/${match.share_token}`;
@@ -52,15 +47,13 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
 
   const { startMatch, addBall, endOver, endInnings, endMatch, undoBall } = useScoringActions(token || '', matchId);
 
-  const handlePinVerified = (t: string) => setToken(t);
-
-  if (isLoading) return <PageLoader label="Loading match..." />;
-  if (!match) return <div className="page-container text-gray-500">Match not found</div>;
-  if (!token) return <PinGate matchId={matchId} onSuccess={handlePinVerified} />;
+  if (isLoading) return <PageLoader label="Pulling the match file" />;
+  if (!match) return <div className="page text-ink-muted">No match on file.</div>;
+  if (!token) return <PinGate matchId={matchId} onSuccess={(t) => setToken(t)} />;
 
   const currentInnings = liveData?.innings?.find(i => i.status === 'live');
   const currentOver = liveData?.currentOver;
-  const isDeath = isDeathOvers(currentOver?.over_number || 0, match.death_overs_from);
+  const isDeath = !!match.death_overs_from && (currentOver?.over_number || 0) >= match.death_overs_from;
   const isOverComplete = (currentOver?.legal_balls || 0) >= 6;
   const bowlingTeamPlayers = currentInnings
     ? (currentInnings.bowling_team_id === match.team_a_id ? match.teamA : match.teamB)?.players || []
@@ -75,12 +68,11 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
       setShowWicketModal(true);
     } else {
       addBall.mutate(data, {
-        onSuccess: (res) => {
-          const updatedInnings = res?.innings;
-          if (updatedInnings && (currentOver?.legal_balls || 0) + 1 >= 6 && !data.is_wide && !data.is_noball) {
+        onSuccess: () => {
+          if ((currentOver?.legal_balls || 0) + 1 >= 6 && !data.is_wide && !data.is_noball) {
             setShowBowlerModal(true);
           }
-        }
+        },
       });
     }
   };
@@ -89,69 +81,71 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
     setShowWicketModal(false);
     addBall.mutate({ ...wicketData, runs: pendingBallRuns }, {
       onSuccess: () => {
-        if ((currentOver?.legal_balls || 0) + 1 >= 6) {
-          setShowBowlerModal(true);
-        }
-      }
+        if ((currentOver?.legal_balls || 0) + 1 >= 6) setShowBowlerModal(true);
+      },
     });
   };
 
   return (
-    <div className="page-container max-w-4xl">
-      {/* Match title + status bar */}
-      <div className="flex items-center justify-between mb-4">
+    <div className="page max-w-[1280px]">
+      {/* ── DESK MASTHEAD ───────────────────────────────────────────── */}
+      <header className="grid lg:grid-cols-[1fr_auto] gap-6 items-end mb-8 pb-6 border-b-2 border-ink">
         <div>
-          <h1 className="font-display font-bold text-white text-lg">{match.title}</h1>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs text-gray-500">{match.teamA?.name} vs {match.teamB?.name}</span>
-            {isDeath && currentInnings && (
-              <span className="text-xs font-display font-semibold uppercase tracking-wider text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-full">
-                💀 Death Overs
-              </span>
-            )}
+          <div className="flex items-center gap-3 mb-2">
+            <span className="overline">scoring desk</span>
+            <span className="font-mono text-[10px] text-ink-dim uppercase tracking-widest">
+              file·{String(match.id).padStart(3, '0')}
+            </span>
+            {isDeath && currentInnings && <span className="badge-pending">death overs</span>}
+          </div>
+          <h1 className="font-display text-[clamp(36px,5vw,64px)] uppercase leading-[0.9] text-ink">
+            {match.title}
+          </h1>
+          <div className="mt-2 flex items-baseline gap-3 text-ink-muted">
+            <span className="text-ink font-body">{match.teamA?.name}</span>
+            <span className="font-editorial italic text-ochre-500">vs</span>
+            <span className="text-ink font-body">{match.teamB?.name}</span>
           </div>
         </div>
-        <div className="flex gap-2">
-          {match.status === 'live' && currentInnings && (
-            <button
-              onClick={() => setShowEndInningsModal(true)}
-              className="text-xs btn-secondary py-1.5 px-3"
-            >
-              End Innings
-            </button>
-          )}
+
+        <div className="flex flex-wrap items-center gap-2 justify-end">
           {match.status === 'pending' && (
-            <button onClick={() => setShowStartModal(true)} className="btn-primary">
-              Start Match
+            <button onClick={() => setShowStartModal(true)} className="btn-primary">Open play</button>
+          )}
+          {match.status === 'live' && currentInnings && (
+            <button onClick={() => setShowEndInningsModal(true)} className="btn-ghost btn-sm">
+              End innings
             </button>
           )}
+          {match.share_token && (
+            <Link href={`/matches/${match.id}/live`} target="_blank" className="btn-ghost btn-sm">
+              Public ticker ↗
+            </Link>
+          )}
         </div>
-      </div>
+      </header>
 
+      {/* ── PENDING ────────────────────────────────────────────────── */}
       {match.status === 'pending' && (
-        <div className="card text-center py-16">
-          <p className="text-gray-400 font-display text-lg mb-2">Match not started yet</p>
-          <p className="text-gray-600 text-sm mb-6">Set toss result and opening players to begin scoring</p>
-          <button onClick={() => setShowStartModal(true)} className="btn-primary px-8 py-3 text-base">
-            Start Match →
-          </button>
-        </div>
+        <section className="slab text-center py-16">
+          <div className="overline mb-3">awaiting toss</div>
+          <p className="font-display text-4xl uppercase text-ink mb-2">First ball not yet bowled.</p>
+          <p className="font-editorial italic text-ink-muted mb-7">Settle the toss and the openers, then we light up.</p>
+          <button onClick={() => setShowStartModal(true)} className="btn-primary btn-lg">Open play →</button>
+        </section>
       )}
 
-      {/* Live match but no live data yet (brief loading window) */}
+      {/* ── LIVE LOADING ───────────────────────────────────────────── */}
       {match.status === 'live' && (!liveData || ((liveData?.innings?.length ?? 0) === 0)) && (
-        <div className="card text-center py-12">
-          <p className="text-gray-500 font-display">Loading match data...</p>
-        </div>
+        <PageLoader label="Tuning the signal" />
       )}
 
-      {(match.status === 'live' || liveData) && currentInnings && (
-        <div className="space-y-4">
-          {/* Score header */}
-          {liveData && <ScoreHeader liveData={liveData} match={match} />}
+      {/* ── ACTIVE SCORING ─────────────────────────────────────────── */}
+      {(match.status === 'live' || liveData) && currentInnings && liveData && (
+        <div className="space-y-6">
+          <ScoreHeader liveData={liveData} match={match} />
 
-          {/* Current over */}
-          {currentOver && liveData && (
+          {currentOver && (
             <OverDisplay
               balls={liveData.currentOverBalls}
               overNumber={currentOver.over_number}
@@ -160,11 +154,9 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
             />
           )}
 
-          <div className="grid md:grid-cols-2 gap-4">
-            {/* Batsmen */}
-            {currentInnings && <BatsmenTable innings={currentInnings} />}
-            {/* Bowler */}
-            {currentInnings?.currentBowler && currentOver && (
+          <div className="grid lg:grid-cols-2 gap-6">
+            <BatsmenTable innings={currentInnings} />
+            {currentInnings.currentBowler && currentOver && (
               <BowlerStats
                 bowler={currentInnings.currentBowler}
                 over={currentOver}
@@ -173,36 +165,35 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
             )}
           </div>
 
-          {/* Ball input */}
+          {/* Ball input or over-complete prompt */}
           {!isOverComplete ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <BallInputPanel
                 onBall={handleBall}
                 disabled={addBall.isPending}
                 isLoading={addBall.isPending}
               />
-              {(currentOver?.legal_balls ?? 0) > 0 || (liveData?.currentOverBalls?.length ?? 0) > 0 ? (
+              {((currentOver?.legal_balls ?? 0) > 0 || (liveData?.currentOverBalls?.length ?? 0) > 0) && (
                 <div className="flex justify-end">
                   <button
-                    onClick={() => { if (confirm('Undo last ball?')) undoBall.mutate(); }}
+                    onClick={() => { if (confirm('Strike the last ball from the record?')) undoBall.mutate(); }}
                     disabled={undoBall.isPending}
-                    className="text-xs btn-secondary py-1.5 px-3 text-rose-400 border-rose-400/30 hover:border-rose-400/60 disabled:opacity-40"
+                    className="btn-ghost btn-sm text-wicket-500 hover:border-wicket-500"
                   >
-                    {undoBall.isPending ? 'Undoing...' : '↩ Undo Last Ball'}
+                    {undoBall.isPending ? 'Undoing…' : '← Undo last ball'}
                   </button>
                 </div>
-              ) : null}
+              )}
             </div>
           ) : (
-            <div className="card text-center py-8">
-              <p className="text-gray-400 font-display mb-3">Over complete — select next bowler</p>
-              <button onClick={() => setShowBowlerModal(true)} className="btn-primary px-6">
-                Select Bowler →
-              </button>
-            </div>
+            <section className="slab-accent gold text-center py-10">
+              <div className="overline mb-2">over complete</div>
+              <p className="font-display text-3xl uppercase text-ink mb-1">Change of bowler.</p>
+              <p className="font-editorial italic text-ink-muted mb-6">Pick the next at the mark to keep play moving.</p>
+              <button onClick={() => setShowBowlerModal(true)} className="btn-primary">Select bowler →</button>
+            </section>
           )}
 
-          {/* End match controls */}
           <EndMatchControls
             matchStatus={match.status}
             onEndMatch={() => endMatch.mutate()}
@@ -211,88 +202,82 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
         </div>
       )}
 
-      {/* Last innings ended (all-out or overs finished) — show only when an innings actually closed */}
+      {/* ── INNINGS CLOSED, AWAITING NEXT ──────────────────────────── */}
       {match.status === 'live' && liveData && !currentInnings &&
        (liveData?.innings?.length ?? 0) > 0 &&
        liveData?.innings?.[liveData.innings.length - 1]?.status === 'completed' && (
-        <div className="card text-center py-12 space-y-4">
-          {liveData && <ScoreHeader liveData={liveData} match={match} />}
-          <p className="text-amber-400 font-display text-lg mt-4">All out!</p>
-          {(liveData?.innings?.length ?? 0) < 2 ? (
-            <>
-              <p className="text-gray-500 text-sm">Set up the second innings to continue.</p>
-              <button onClick={() => setShowEndInningsModal(true)} className="btn-primary px-8">
-                Setup 2nd Innings →
+        <div className="space-y-6">
+          <ScoreHeader liveData={liveData} match={match} />
+          <section className="slab-accent gold text-center py-12">
+            <div className="overline mb-2">innings closed</div>
+            <p className="font-display text-4xl uppercase text-ink mb-2">
+              {(liveData?.innings?.length ?? 0) < 2 ? 'Time for the chase.' : 'Both teams have batted.'}
+            </p>
+            <p className="font-editorial italic text-ink-muted mb-6">
+              {(liveData?.innings?.length ?? 0) < 2
+                ? 'File the openers and the chase begins.'
+                : 'Close the match to file the official scorecard.'}
+            </p>
+            {(liveData?.innings?.length ?? 0) < 2 ? (
+              <button onClick={() => setShowEndInningsModal(true)} className="btn-primary btn-lg">Open 2nd innings →</button>
+            ) : (
+              <button onClick={() => endMatch.mutate()} disabled={endMatch.isPending} className="btn-primary btn-lg">
+                {endMatch.isPending ? 'Filing…' : 'End match →'}
               </button>
-            </>
-          ) : (
-            <>
-              <p className="text-gray-500 text-sm">Both innings complete. End the match to see the final scorecard.</p>
-              <button onClick={() => endMatch.mutate()} disabled={endMatch.isPending} className="btn-primary px-8">
-                {endMatch.isPending ? 'Ending...' : 'End Match →'}
-              </button>
-            </>
-          )}
+            )}
+          </section>
         </div>
       )}
 
+      {/* ── COMPLETED ──────────────────────────────────────────────── */}
       {match.status === 'completed' && (
-        <div className="card text-center py-12">
-          <p className="text-pitch-400 font-display text-xl mb-2">✅ Match Completed</p>
-          <a href={`/matches/${matchId}/summary`} className="btn-primary mt-4 inline-block">View Scorecard</a>
-        </div>
+        <section className="slab-accent pitch text-center py-12">
+          <div className="overline mb-2">filed &amp; archived</div>
+          <p className="font-display text-5xl uppercase text-pitch-400 mb-2">Match closed.</p>
+          <p className="font-editorial italic text-ink-muted mb-6">The card is in the archive.</p>
+          <Link href={`/matches/${matchId}/summary`} className="btn-primary btn-lg">View the scorecard →</Link>
+        </section>
       )}
 
       {/* Modals */}
       {showStartModal && (
         <StartMatchModal
           match={match}
-          onConfirm={(data) => {
-            startMatch.mutate(data, { onSuccess: () => setShowStartModal(false) });
-          }}
+          onConfirm={(data) => startMatch.mutate(data, { onSuccess: () => setShowStartModal(false) })}
           onClose={() => setShowStartModal(false)}
           isLoading={startMatch.isPending}
         />
       )}
-
       {showBowlerModal && (
         <BowlerSelectModal
           players={bowlingTeamPlayers}
           currentBowlerId={currentInnings?.current_bowler_id}
-          onSelect={(bowlerId) => {
-            endOver.mutate(bowlerId, { onSuccess: () => setShowBowlerModal(false) });
-          }}
+          onSelect={(bowlerId) => endOver.mutate(bowlerId, { onSuccess: () => setShowBowlerModal(false) })}
           onClose={() => setShowBowlerModal(false)}
           isLoading={endOver.isPending}
         />
       )}
-
       {showWicketModal && (
         <WicketModal
-          batsmen={[
-            currentInnings?.batsman1,
-            currentInnings?.batsman2,
-          ].filter(Boolean)}
+          batsmen={[currentInnings?.batsman1, currentInnings?.batsman2].filter(Boolean)}
           fielders={bowlingTeamPlayers}
           newBatsmenPool={battingTeamPlayers.filter(
-            (p: Player) => p.id !== currentInnings?.current_batsman1_id &&
-                 p.id !== currentInnings?.current_batsman2_id &&
-                 !liveData?.innings
-                   ?.find(i => i.id === currentInnings?.id)
-                   ?.battingCards?.some((bc: any) => bc.player_id === p.id && bc.is_out)
+            (p: Player) =>
+              p.id !== currentInnings?.current_batsman1_id &&
+              p.id !== currentInnings?.current_batsman2_id &&
+              !liveData?.innings
+                ?.find(i => i.id === currentInnings?.id)
+                ?.battingCards?.some((bc: any) => bc.player_id === p.id && bc.is_out)
           )}
           onConfirm={handleWicketConfirm}
           onClose={() => setShowWicketModal(false)}
         />
       )}
-
       {showEndInningsModal && (currentInnings || liveData?.innings?.length) && (
         <EndInningsModal
           teams={{ teamA: match.teamA!, teamB: match.teamB! }}
-          currentInnings={(currentInnings || liveData?.innings?.[liveData.innings.length - 1])!}
-          onConfirm={(data) => {
-            endInnings.mutate(data, { onSuccess: () => setShowEndInningsModal(false) });
-          }}
+          currentInnings={(currentInnings || liveData?.innings?.[liveData!.innings.length - 1])!}
+          onConfirm={(data) => endInnings.mutate(data, { onSuccess: () => setShowEndInningsModal(false) })}
           onClose={() => setShowEndInningsModal(false)}
           isLoading={endInnings.isPending}
         />

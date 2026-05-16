@@ -10,30 +10,39 @@ interface Props {
 
 export function BowlerStats({ bowler, over, bowlingCards }: Props) {
   const card = bowlingCards.find(c => c.player_id === bowler.id);
-
   const economy = card && card.legal_balls > 0
     ? ((card.runs / card.legal_balls) * 6).toFixed(2)
-    : '-';
+    : '—';
 
   return (
-    <div className="card">
-      <h3 className="font-display text-xs uppercase tracking-widest text-gray-500 mb-3">Bowling</h3>
-      <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-800/40 border border-gray-700">
-        <div className="flex-1">
-          <p className="font-display font-medium text-gray-200">{bowler.name}</p>
-          <p className="text-xs text-gray-500 mt-0.5">Over {over.over_number} — {over.legal_balls}/6 balls</p>
-        </div>
-        <div className="flex gap-4 text-right">
-          <div>
-            <p className="font-mono font-bold text-white text-lg leading-none">{card?.wickets ?? 0}/{card?.runs ?? 0}</p>
-            <p className="text-xs text-gray-600 font-mono">{card?.overs ?? 0} ov</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 font-mono">Econ</p>
-            <p className="text-xs text-gray-300 font-mono">{economy}</p>
-          </div>
-        </div>
+    <section className="slab">
+      <header className="flex items-center justify-between mb-4">
+        <span className="overline">on the mark</span>
+        <span className="eyebrow">bowling</span>
+      </header>
+
+      <div className="grid grid-cols-[1fr_44px_44px_44px_56px] gap-2 pb-2 mb-1 border-b border-canvas-ridge">
+        <span className="eyebrow">bowler</span>
+        <span className="eyebrow text-right">O</span>
+        <span className="eyebrow text-right">R</span>
+        <span className="eyebrow text-right">W</span>
+        <span className="eyebrow text-right">Econ</span>
       </div>
-    </div>
+
+      <div className="grid grid-cols-[1fr_44px_44px_44px_56px] gap-2 items-baseline py-3 -mx-2 px-2 border-l-2 border-saffron-500 bg-saffron-500/[0.06]">
+        <div className="min-w-0">
+          <div className="font-display text-[18px] uppercase tracking-tight text-ink truncate">
+            {bowler.name}
+          </div>
+          <div className="font-mono text-[10px] text-ink-dim uppercase tracking-widest mt-1">
+            ball {over.legal_balls}/6 · over {over.over_number}
+          </div>
+        </div>
+        <span className="num-md text-ink text-right">{card?.overs?.toFixed(1) ?? '0.0'}</span>
+        <span className="num-md text-ink text-right">{card?.runs ?? 0}</span>
+        <span className="num-md text-saffron-500 text-right">{card?.wickets ?? 0}</span>
+        <span className="num-sm text-ink-muted text-right">{economy}</span>
+      </div>
+    </section>
   );
 }

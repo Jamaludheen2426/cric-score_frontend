@@ -42,82 +42,100 @@ export function StartMatchModal({ match, onConfirm, onClose, isLoading }: Props)
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md shadow-2xl">
-        <div className="p-5 border-b border-gray-800">
-          <h2 className="font-display text-lg font-bold text-white">Start Match</h2>
-          <p className="text-gray-500 text-sm mt-0.5">Set toss result and opening players</p>
-        </div>
+    <div className="fixed inset-0 bg-canvas/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-canvas-raised w-full max-w-xl slab-accent my-8">
+        <div className="overline mb-2">first ball of the day</div>
+        <h2 className="font-display text-3xl uppercase text-ink leading-none mb-1">
+          Toss &amp; teamsheets
+        </h2>
+        <p className="font-editorial italic text-ink-muted text-[13px] mb-6">
+          Set the toss outcome and the openers. The desk opens on confirm.
+        </p>
 
-        <div className="p-5 space-y-4">
+        <div className="space-y-5">
           {/* Toss */}
           <div>
-            <label className="label">Toss Won By</label>
-            <select className="input" value={tossWinner} onChange={e => setTossWinner(e.target.value)}>
-              <option value="">Select team...</option>
-              <option value={match.team_a_id}>{match.teamA?.name}</option>
-              <option value={match.team_b_id}>{match.teamB?.name}</option>
-            </select>
+            <label className="label">toss won by</label>
+            <div className="grid grid-cols-2 gap-px bg-canvas-ridge">
+              {[match.teamA, match.teamB].map(t => {
+                if (!t) return null;
+                const active = String(t.id) === tossWinner;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setTossWinner(String(t.id))}
+                    className={`px-4 py-3 text-left transition-colors ${
+                      active ? 'bg-saffron-500 text-canvas' : 'bg-canvas-raised text-ink-muted hover:bg-canvas-ridge'
+                    }`}
+                  >
+                    <div className={`font-display text-lg uppercase tracking-tight ${active ? '' : 'text-ink'}`}>
+                      {t.name}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {tossWinner && (
             <div>
-              <label className="label">Elected To</label>
-              <div className="flex gap-2">
-                {(['bat', 'bowl'] as const).map(opt => (
-                  <button
-                    key={opt}
-                    onClick={() => setElectedTo(opt)}
-                    className={`flex-1 py-2 rounded-lg border font-display text-sm capitalize transition-colors ${
-                      electedTo === opt
-                        ? 'bg-pitch-600/20 border-pitch-500 text-pitch-400'
-                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                ))}
+              <label className="label">elected to</label>
+              <div className="grid grid-cols-2 gap-px bg-canvas-ridge">
+                {(['bat', 'bowl'] as const).map(opt => {
+                  const active = electedTo === opt;
+                  return (
+                    <button
+                      key={opt}
+                      onClick={() => setElectedTo(opt)}
+                      className={`px-4 py-3 transition-colors ${
+                        active ? 'bg-ochre-500 text-canvas' : 'bg-canvas-raised text-ink-muted hover:bg-canvas-ridge'
+                      }`}
+                    >
+                      <div className={`font-display text-lg uppercase tracking-widest2 ${active ? '' : 'text-ink'}`}>
+                        {opt}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
               {battingTeam && (
-                <p className="text-xs text-gray-500 mt-1.5">
-                  🏏 <strong className="text-gray-300">{battingTeam.name}</strong> will bat first
+                <p className="font-editorial italic text-ink-muted text-[13px] mt-2">
+                  <span className="text-saffron-500 not-italic font-display uppercase tracking-widest2 text-[11px]">batting:</span>{' '}
+                  <strong className="text-ink not-italic font-body">{battingTeam.name}</strong>
                 </p>
               )}
             </div>
           )}
 
-          {/* Opening batsmen */}
+          {/* Openers */}
           {battingTeam?.players && (
-            <>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="label">Opening Bat 1 *</label>
-                  <select className="input" value={batsman1} onChange={e => setBatsman1(e.target.value)}>
-                    <option value="">Select...</option>
-                    {battingTeam.players.map((p: Player) => (
-                      <option key={p.id} value={p.id} disabled={String(p.id) === batsman2}>{p.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="label">Opening Bat 2 *</label>
-                  <select className="input" value={batsman2} onChange={e => setBatsman2(e.target.value)}>
-                    <option value="">Select...</option>
-                    {battingTeam.players.map((p: Player) => (
-                      <option key={p.id} value={p.id} disabled={String(p.id) === batsman1}>{p.name}</option>
-                    ))}
-                  </select>
-                </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label">opening bat · 1</label>
+                <select className="input" value={batsman1} onChange={e => setBatsman1(e.target.value)}>
+                  <option value="">Select…</option>
+                  {battingTeam.players.map((p: Player) => (
+                    <option key={p.id} value={p.id} disabled={String(p.id) === batsman2}>{p.name}</option>
+                  ))}
+                </select>
               </div>
-            </>
+              <div>
+                <label className="label">opening bat · 2</label>
+                <select className="input" value={batsman2} onChange={e => setBatsman2(e.target.value)}>
+                  <option value="">Select…</option>
+                  {battingTeam.players.map((p: Player) => (
+                    <option key={p.id} value={p.id} disabled={String(p.id) === batsman1}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
           )}
 
-          {/* Opening bowler */}
           {bowlingTeam?.players && (
             <div>
-              <label className="label">Opening Bowler *</label>
+              <label className="label">opening bowler</label>
               <select className="input" value={bowler} onChange={e => setBowler(e.target.value)}>
-                <option value="">Select...</option>
+                <option value="">Select…</option>
                 {bowlingTeam.players.map((p: Player) => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
@@ -126,10 +144,10 @@ export function StartMatchModal({ match, onConfirm, onClose, isLoading }: Props)
           )}
         </div>
 
-        <div className="p-5 border-t border-gray-800 flex gap-3 justify-end">
-          <button onClick={onClose} className="btn-secondary">Cancel</button>
-          <button onClick={handleConfirm} disabled={!canSubmit || isLoading} className="btn-primary disabled:opacity-40">
-            {isLoading ? 'Starting...' : 'Start Match →'}
+        <div className="flex gap-2 justify-end pt-5 mt-5 border-t border-canvas-ridge">
+          <button onClick={onClose} className="btn-ghost btn-sm">Cancel</button>
+          <button onClick={handleConfirm} disabled={!canSubmit || isLoading} className="btn-primary">
+            {isLoading ? 'Opening desk…' : 'Begin play →'}
           </button>
         </div>
       </div>

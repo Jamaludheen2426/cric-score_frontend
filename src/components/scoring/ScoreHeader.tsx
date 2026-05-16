@@ -11,74 +11,96 @@ interface Props {
 export function ScoreHeader({ liveData, match }: Props) {
   const currentInnings = liveData.innings.find(i => i.status === 'live');
   const completedInnings = liveData.innings.find(i => i.status === 'completed');
-
   if (!currentInnings) return null;
 
   const isSecondInnings = currentInnings.innings_number === 2;
   const runsNeeded = currentInnings.target ? currentInnings.target - currentInnings.total_runs : null;
-  const wicketsLeft = match.players_per_side - 1 - currentInnings.total_wickets;
+  const totalBalls = match.total_overs * 6;
+  const ballsBowled = Math.floor(currentInnings.total_overs_bowled) * 6 + Math.round((currentInnings.total_overs_bowled % 1) * 10);
+  const ballsLeft = totalBalls - ballsBowled;
+  const battingShort = (currentInnings.battingTeam?.name || '?').trim().slice(0, 3).toUpperCase();
 
   return (
-    <div className="card bg-gradient-to-br from-gray-900 to-gray-950 border-gray-700">
-      {/* Batting team score */}
-      <div className="flex items-end justify-between mb-2">
-        <div>
-          <p className="text-gray-500 text-xs font-display uppercase tracking-wider mb-1">
-            {currentInnings.battingTeam?.name} — Innings {currentInnings.innings_number}
-          </p>
-          <div className="flex items-baseline gap-3">
-            <span className="font-display font-extrabold text-5xl text-white tabular-nums">
-              {getScoreDisplay(currentInnings)}
-            </span>
-            <span className="text-gray-400 text-xl font-mono">
-              ({formatOvers(currentInnings.total_overs_bowled)}/{match.total_overs})
-            </span>
-          </div>
+    <section className="slab-accent reveal">
+      {/* Top meta row */}
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <span className="badge-live"><span className="live-dot" /> live</span>
+          <span className="font-mono text-[10px] text-ink-dim uppercase tracking-widest">
+            innings {currentInnings.innings_number} of 2
+          </span>
         </div>
         {completedInnings && (
-          <div className="text-right">
-            <p className="text-xs text-gray-600 font-display uppercase tracking-wider mb-0.5">
-              {completedInnings.battingTeam?.name}
-            </p>
-            <p className="font-display font-bold text-gray-300 text-lg">
-              {getScoreDisplay(completedInnings)}
-            </p>
+          <div className="text-right font-mono text-[12px] text-ink-muted">
+            <span className="eyebrow mr-2">{completedInnings.battingTeam?.name}</span>
+            <span className="text-ink">{getScoreDisplay(completedInnings)}</span>
+            <span className="text-ink-dim"> ({formatOvers(completedInnings.total_overs_bowled)})</span>
           </div>
         )}
       </div>
 
-      {/* Stats row */}
-      <div className="flex gap-4 mt-3 pt-3 border-t border-gray-800">
+      {/* HERO score block */}
+      <div className="grid md:grid-cols-[1fr_auto] gap-6 items-end mb-6">
         <div>
-          <p className="text-xs text-gray-600 font-display uppercase tracking-wider">Run Rate</p>
-          <p className="font-mono font-medium text-gray-200">
-            {currentInnings.run_rate ? formatRate(currentInnings.run_rate) : '0.00'}
-          </p>
+          <div className="flex items-baseline gap-3 mb-2">
+            <span className="font-display font-black text-2xl text-saffron-500 uppercase tracking-tight">
+              {battingShort}
+            </span>
+            <span className="font-editorial italic text-[13px] text-ochre-500">batting · {currentInnings.battingTeam?.name}</span>
+          </div>
+          <div className="flex items-baseline gap-4">
+            <span className="num-mega">{currentInnings.total_runs}</span>
+            <span className="num-lg text-ink-muted">/{currentInnings.total_wickets}</span>
+          </div>
+          <div className="mt-2 font-mono text-[15px] text-ink-muted">
+            <span className="text-ink">{formatOvers(currentInnings.total_overs_bowled)}</span>
+            <span className="text-ink-dim"> / {match.total_overs} ov</span>
+          </div>
         </div>
+
         {isSecondInnings && runsNeeded !== null && (
+          <div className="md:text-right border-l-2 md:border-l border-canvas-ridge md:pl-6 pl-0 pt-3 md:pt-0 md:border-t-0 border-t">
+            <div className="eyebrow mb-1.5">{runsNeeded <= 0 ? 'Result' : 'To win'}</div>
+            {runsNeeded <= 0 ? (
+              <div className="font-display text-3xl uppercase text-pitch-400">Chased</div>
+            ) : (
+              <>
+                <div className="num-lg text-ink">{runsNeeded}</div>
+                <div className="font-mono text-[12px] text-ink-muted">
+                  in {ballsLeft} balls
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Stats strip */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-canvas-ridge border-t border-canvas-ridge">
+        <Stat label="run rate"  value={currentInnings.run_rate != null ? formatRate(currentInnings.run_rate) : '0.00'} />
+        {isSecondInnings ? (
           <>
-            <div>
-              <p className="text-xs text-gray-600 font-display uppercase tracking-wider">Target</p>
-              <p className="font-mono font-medium text-gray-200">{currentInnings.target}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-600 font-display uppercase tracking-wider">Need</p>
-              <p className={`font-mono font-medium ${runsNeeded <= 0 ? 'text-pitch-400' : 'text-amber-400'}`}>
-                {runsNeeded > 0 ? `${runsNeeded} off ${(match.total_overs * 6 - Math.floor(currentInnings.total_overs_bowled) * 6 - Math.round((currentInnings.total_overs_bowled % 1) * 10))} balls` : 'Won!'}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-600 font-display uppercase tracking-wider">Req Rate</p>
-              <p className="font-mono font-medium text-amber-300">
-                {currentInnings.required_rate ? formatRate(currentInnings.required_rate) : '-'}
-              </p>
-            </div>
+            <Stat label="target"   value={String(currentInnings.target || '—')} />
+            <Stat label="req rate" value={currentInnings.required_rate != null && currentInnings.required_rate > 0 ? formatRate(currentInnings.required_rate) : '—'} accent="saffron" />
+          </>
+        ) : (
+          <>
+            <Stat label="batting"  value={`vs ${(currentInnings.bowlingTeam?.name || '').slice(0,8)}`} mono />
+            <Stat label="extras"   value={String(currentInnings.extras)} />
           </>
         )}
-        <div>
-          <p className="text-xs text-gray-600 font-display uppercase tracking-wider">Extras</p>
-          <p className="font-mono font-medium text-gray-200">{currentInnings.extras}</p>
-        </div>
+        <Stat label="overs left" value={String(match.total_overs - Math.floor(currentInnings.total_overs_bowled))} />
+      </div>
+    </section>
+  );
+}
+
+function Stat({ label, value, accent, mono }: { label: string; value: string; accent?: 'saffron'; mono?: boolean }) {
+  return (
+    <div className="bg-canvas-raised px-4 py-3">
+      <div className="eyebrow mb-1">{label}</div>
+      <div className={`${mono ? 'font-mono text-[15px]' : 'font-display text-2xl'} leading-none ${accent === 'saffron' ? 'text-saffron-500' : 'text-ink'}`}>
+        {value}
       </div>
     </div>
   );

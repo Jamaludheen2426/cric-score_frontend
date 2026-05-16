@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useMatch } from '@/lib/queries';
 import { PageLoader } from '@/components/PageLoader';
 import { LiveScore } from '@/types';
 import { LiveScoreCard } from '@/components/LiveScoreCard';
-import { Radio, Share2 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
@@ -30,28 +30,39 @@ export function LiveScorePage({ matchId }: { matchId: number }) {
   const copyShareLink = () => {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 1800);
   };
 
-  if (isLoading) return <PageLoader label="Loading live score..." />;
-  if (!match) return <div className="text-gray-500">Match not found</div>;
+  if (isLoading) return <PageLoader label="Tuning the broadcast" />;
+  if (!match) return <div className="page text-ink-muted">No match on file.</div>;
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <div className={`w-2 h-2 rounded-full ${connected ? 'bg-pitch-500 animate-pulse' : 'bg-gray-600'}`} />
-          <h1 className="font-display font-bold text-white">{match.title}</h1>
-          {match.status === 'live' && <span className="badge-live"><Radio size={10} />LIVE</span>}
+    <div className="page max-w-[1280px]">
+      {/* Masthead */}
+      <header className="grid lg:grid-cols-[1fr_auto] gap-4 items-end mb-8 pb-6 border-b-2 border-ink">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <span className={`live-dot ${connected ? '' : 'opacity-30'}`} />
+            <span className="overline">{connected ? 'on air' : 'reconnecting…'}</span>
+            <Link href="/matches" className="font-mono text-[10px] text-ink-dim uppercase tracking-widest hover:text-saffron-500">
+              ← all fixtures
+            </Link>
+          </div>
+          <h1 className="font-display text-[clamp(36px,5vw,72px)] uppercase leading-[0.9] text-ink">
+            {match.title}
+          </h1>
+          <div className="mt-2 flex items-baseline gap-3 text-ink-muted">
+            <span className="text-ink font-body">{match.teamA?.name}</span>
+            <span className="font-editorial italic text-ochre-500">vs</span>
+            <span className="text-ink font-body">{match.teamB?.name}</span>
+          </div>
         </div>
-        <button onClick={copyShareLink} className="btn-secondary text-xs flex items-center gap-1.5 py-1.5 px-3">
-          <Share2 size={12} />
-          {copied ? 'Copied!' : 'Share'}
+        <button onClick={copyShareLink} className="btn-ghost btn-sm">
+          {copied ? '✓ Copied' : 'Share this ticker'}
         </button>
-      </div>
+      </header>
 
-      {!liveData && <PageLoader label="Connecting to live feed..." />}
+      {!liveData && <PageLoader label="Connecting to the wire" />}
       {liveData && <LiveScoreCard liveData={liveData} match={match} />}
     </div>
   );

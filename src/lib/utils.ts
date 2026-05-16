@@ -18,12 +18,13 @@ export function getBallLabel(ball: BallRecord): string {
 }
 
 export function getBallColor(ball: BallRecord): string {
-  if (ball.is_wicket) return 'bg-rose-600 text-white';
-  if (ball.is_wide || ball.is_noball) return 'bg-amber-500 text-white';
-  if (ball.runs === 6) return 'bg-purple-600 text-white';
-  if (ball.runs === 4) return 'bg-pitch-600 text-white';
-  if (ball.runs === 0) return 'bg-gray-200 text-gray-600';
-  return 'bg-gray-700 text-white';
+  if (ball.is_wicket) return 'pellet pellet-wicket';
+  if (ball.is_wide) return 'pellet pellet-wide';
+  if (ball.is_noball) return 'pellet pellet-nb';
+  if (ball.runs === 6) return 'pellet pellet-six';
+  if (ball.runs === 4) return 'pellet pellet-four';
+  if (ball.runs === 0) return 'pellet pellet-dot';
+  return 'pellet pellet-run';
 }
 
 export function generatePin(): string {

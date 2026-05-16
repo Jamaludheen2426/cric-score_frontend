@@ -5,9 +5,7 @@ import { matchesApi } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 import { PageLoader } from '@/components/PageLoader';
 import { LiveScoreCard } from '@/components/LiveScoreCard';
-import { getScoreDisplay } from '@/lib/utils';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
 
 export function SummaryContent({ matchId }: { matchId: number }) {
   const { data: match, isLoading: matchLoading } = useMatch(matchId);
@@ -17,40 +15,60 @@ export function SummaryContent({ matchId }: { matchId: number }) {
     enabled: !!match?.share_token,
   });
 
-  if (matchLoading || scoreLoading) return <PageLoader label="Loading scorecard..." />;
-  if (!match || !liveData) return <div className="text-gray-500">Scorecard not found</div>;
+  if (matchLoading || scoreLoading) return <PageLoader label="Pulling the archived card" />;
+  if (!match || !liveData) return <div className="page text-ink-muted">Scorecard not in the file.</div>;
 
-  // Determine result
   const inn1 = liveData.innings.find((i: any) => i.innings_number === 1);
   const inn2 = liveData.innings.find((i: any) => i.innings_number === 2);
   let resultText = '';
+  let winner = '';
   if (inn1 && inn2) {
     const runs1 = inn1.total_runs;
     const runs2 = inn2.total_runs;
     const target = inn2.target || runs1 + 1;
     if (runs2 >= target) {
       const wicketsLeft = match.players_per_side - 1 - inn2.total_wickets;
-      resultText = `${inn2.battingTeam?.name} won by ${wicketsLeft} wickets`;
+      winner = inn2.battingTeam?.name || '';
+      resultText = `won by ${wicketsLeft} wicket${wicketsLeft === 1 ? '' : 's'}`;
     } else if (runs1 > runs2) {
-      resultText = `${inn1.battingTeam?.name} won by ${runs1 - runs2} runs`;
+      winner = inn1.battingTeam?.name || '';
+      resultText = `won by ${runs1 - runs2} run${runs1 - runs2 === 1 ? '' : 's'}`;
     } else if (runs1 === runs2) {
-      resultText = 'Match tied';
+      winner = '';
+      resultText = 'match tied';
     }
   }
 
   return (
-    <div>
-      <div className="flex items-center gap-3 mb-5">
-        <Link href="/matches" className="p-2 rounded-lg hover:bg-gray-800 text-gray-400 transition-colors">
-          <ArrowLeft size={18} />
+    <div className="page max-w-[1280px]">
+      <header className="mb-10 pb-8 border-b-2 border-ink">
+        <Link href="/matches" className="overline hover:text-saffron-500 inline-block mb-3">
+          ← back to fixtures
         </Link>
-        <div>
-          <h1 className="font-display text-xl font-bold text-white">{match.title}</h1>
-          {resultText && (
-            <p className="text-pitch-400 font-display text-sm mt-0.5">{resultText}</p>
-          )}
+        <div className="grid md:grid-cols-[1fr_auto] items-end gap-6">
+          <div>
+            <div className="eyebrow mb-2">filed scorecard · the morning paper</div>
+            <h1 className="font-display text-[clamp(44px,6vw,96px)] uppercase leading-[0.85] text-ink">
+              {match.title}
+            </h1>
+            {winner ? (
+              <div className="mt-4 chyron flex items-baseline gap-2">
+                <span className="font-display text-2xl uppercase text-saffron-500">{winner}</span>
+                <span className="font-editorial italic text-[14px] text-ink-muted">{resultText}</span>
+              </div>
+            ) : resultText && (
+              <div className="mt-4 chyron">
+                <span className="font-display text-2xl uppercase text-ochre-500">{resultText}</span>
+              </div>
+            )}
+          </div>
+          <div className="text-right">
+            <div className="eyebrow">archive ref</div>
+            <div className="font-mono text-2xl text-ink mt-1">#{String(match.id).padStart(5, '0')}</div>
+          </div>
         </div>
-      </div>
+      </header>
+
       <LiveScoreCard liveData={liveData} match={match} />
     </div>
   );

@@ -4,105 +4,138 @@ import Link from 'next/link';
 import { useMatches } from '@/lib/queries';
 import { PageLoader } from '@/components/PageLoader';
 import { Match } from '@/types';
-import { Plus, Radio, Clock, CheckCircle, ChevronRight } from 'lucide-react';
 
-function MatchCard({ match }: { match: Match }) {
-  const statusConfig = {
-    live: { badge: 'badge-live', icon: <Radio size={10} />, label: 'LIVE' },
-    pending: { badge: 'badge-pending', icon: <Clock size={10} />, label: 'UPCOMING' },
-    completed: { badge: 'badge-completed', icon: <CheckCircle size={10} />, label: 'COMPLETED' },
-  }[match.status];
+function MatchRow({ match, idx }: { match: Match; idx: number }) {
+  const isLive = match.status === 'live';
+  const isPending = match.status === 'pending';
+
+  const accent = isLive ? '' : isPending ? 'gold' : 'muted';
+  const targetHref =
+    match.status === 'live'      ? `/matches/${match.id}/live` :
+    match.status === 'completed' ? `/matches/${match.id}/summary` :
+                                   `/matches/${match.id}/score`;
 
   return (
-    <div className="card hover:border-gray-700 transition-all group">
-      <div className="flex items-start justify-between mb-3">
-        <span className={statusConfig.badge}>
-          {statusConfig.icon}
-          {statusConfig.label}
-        </span>
-        <span className="text-xs text-gray-600">{match.total_overs} overs</span>
-      </div>
-      <h3 className="font-display font-semibold text-white text-lg mb-1">{match.title}</h3>
-      <div className="flex items-center gap-2 text-sm text-gray-400">
-        <span>{match.teamA?.name}</span>
-        <span className="text-gray-600">vs</span>
-        <span>{match.teamB?.name}</span>
-      </div>
-      <div className="mt-4 pt-4 border-t border-gray-800 flex gap-2">
-        {match.status === 'live' && (
-          <Link href={`/matches/${match.id}/live`} className="flex-1 text-center text-sm py-1.5 rounded-lg bg-rose-600/10 text-rose-400 hover:bg-rose-600/20 border border-rose-600/20 transition-colors font-display">
-            Live Score
+    <article
+      className={`slab-accent ${accent} group hover:translate-x-1 transition-transform duration-200 reveal`}
+      style={{ animationDelay: `${Math.min(idx * 60, 400)}ms` }}
+    >
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+        {/* LEFT — fixture identity */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 mb-3">
+            <span className="font-mono text-[10px] text-ink-dim uppercase tracking-widest">
+              file {String(match.id).padStart(3, '0')}
+            </span>
+            <span className={isLive ? 'badge-live' : isPending ? 'badge-pending' : 'badge-completed'}>
+              {isLive && <span className="live-dot mr-1" />}
+              {match.status}
+            </span>
+          </div>
+
+          <h3 className="font-display text-3xl md:text-4xl uppercase text-ink leading-none mb-2">
+            {match.title}
+          </h3>
+
+          <div className="flex items-baseline gap-3 font-body text-ink-muted text-[15px]">
+            <span className="text-ink">{match.teamA?.name || 'Team A'}</span>
+            <span className="font-editorial italic text-ochre-500 text-[13px]">vs</span>
+            <span className="text-ink">{match.teamB?.name || 'Team B'}</span>
+          </div>
+        </div>
+
+        {/* MIDDLE — stat strip */}
+        <div className="flex gap-8 md:border-l md:border-canvas-ridge md:pl-8">
+          <div className="stat">
+            <span className="stat-label">Overs</span>
+            <span className="stat-value">{match.total_overs}</span>
+          </div>
+          <div className="stat">
+            <span className="stat-label">Squad</span>
+            <span className="stat-value">{match.players_per_side}</span>
+          </div>
+        </div>
+
+        {/* RIGHT — action */}
+        <div className="flex items-center gap-2 md:border-l md:border-canvas-ridge md:pl-8">
+          <Link href={targetHref} className="btn-ghost btn-sm group-hover:border-saffron-500 group-hover:text-saffron-500">
+            {isLive ? 'Watch live' : isPending ? 'Open desk' : 'View card'} →
           </Link>
-        )}
-        {match.status !== 'completed' && (
-          <Link href={`/matches/${match.id}/score`} className="flex-1 text-center text-sm py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700 transition-colors font-display">
-            Score
-          </Link>
-        )}
-        {match.status === 'completed' && (
-          <Link href={`/matches/${match.id}/summary`} className="flex-1 text-center text-sm py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700 transition-colors font-display">
-            Scorecard
-          </Link>
-        )}
+          {!isPending && match.status !== 'completed' && (
+            <Link href={`/matches/${match.id}/score`} className="btn-primary btn-sm">
+              Score
+            </Link>
+          )}
+        </div>
       </div>
-    </div>
+    </article>
+  );
+}
+
+function Section({ title, count, children }: { title: string; count: number; children: React.ReactNode }) {
+  if (count === 0) return null;
+  return (
+    <section className="mb-10">
+      <div className="flex items-baseline justify-between mb-5 pb-3 border-b border-canvas-ridge">
+        <h2 className="chyron font-display text-xl uppercase tracking-widest2 text-ink">
+          {title}
+        </h2>
+        <span className="font-mono text-[11px] text-ink-dim uppercase tracking-widest">{count} on file</span>
+      </div>
+      <div className="flex flex-col gap-3">{children}</div>
+    </section>
   );
 }
 
 export function MatchesContent() {
   const { data: matches, isLoading } = useMatches();
 
-  if (isLoading) return <PageLoader label="Loading matches..." />;
+  if (isLoading) return <PageLoader label="Pulling the fixtures" />;
 
-  const live = matches?.filter((m: Match) => m.status === 'live') || [];
-  const pending = matches?.filter((m: Match) => m.status === 'pending') || [];
-  const completed = matches?.filter((m: Match) => m.status === 'completed') || [];
+  const live = (matches || []).filter((m: Match) => m.status === 'live');
+  const pending = (matches || []).filter((m: Match) => m.status === 'pending');
+  const completed = (matches || []).filter((m: Match) => m.status === 'completed');
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-white">Matches</h1>
-          <p className="text-gray-500 text-sm mt-0.5">{matches?.length || 0} total</p>
+    <div className="page">
+      {/* Masthead */}
+      <header className="grid lg:grid-cols-12 items-end gap-6 mb-12 pb-8 border-b-2 border-ink">
+        <div className="lg:col-span-8">
+          <div className="overline mb-3">section ii — the fixtures desk</div>
+          <h1 className="font-display text-[clamp(54px,8vw,108px)] uppercase leading-[0.85] text-ink">
+            Match&nbsp;
+            <span className="font-editorial italic font-normal text-ochre-500">card</span>
+          </h1>
         </div>
-        <Link href="/matches/create" className="btn-primary flex items-center gap-2">
-          <Plus size={16} /> New Match
-        </Link>
-      </div>
+        <div className="lg:col-span-4 flex items-end justify-between lg:justify-end gap-6">
+          <div className="stat text-right">
+            <span className="stat-label">on file</span>
+            <span className="stat-value">{matches?.length || 0}</span>
+          </div>
+          <Link href="/matches/create" className="btn-primary">+ Open match</Link>
+        </div>
+      </header>
 
       {!matches?.length && (
-        <div className="card text-center py-16">
-          <p className="text-gray-500 font-display">No matches yet</p>
-          <Link href="/matches/create" className="btn-primary mt-4 inline-flex">Create first match</Link>
+        <div className="slab text-center py-20">
+          <div className="overline mb-4">empty press box</div>
+          <p className="font-display text-3xl uppercase text-ink mb-2">No matches on the wire.</p>
+          <p className="text-ink-muted mb-8">Start a fresh fixture and the scoring desk goes live.</p>
+          <Link href="/matches/create" className="btn-primary btn-lg">Open the first card →</Link>
         </div>
       )}
 
-      {live.length > 0 && (
-        <section className="mb-6">
-          <h2 className="font-display text-xs uppercase tracking-widest text-gray-500 mb-3">🔴 Live Now</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {live.map((m: Match) => <MatchCard key={m.id} match={m} />)}
-          </div>
-        </section>
-      )}
+      <Section title="Now on the field" count={live.length}>
+        {live.map((m: Match, i: number) => <MatchRow key={m.id} match={m} idx={i} />)}
+      </Section>
 
-      {pending.length > 0 && (
-        <section className="mb-6">
-          <h2 className="font-display text-xs uppercase tracking-widest text-gray-500 mb-3">⏳ Upcoming</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {pending.map((m: Match) => <MatchCard key={m.id} match={m} />)}
-          </div>
-        </section>
-      )}
+      <Section title="In the diary" count={pending.length}>
+        {pending.map((m: Match, i: number) => <MatchRow key={m.id} match={m} idx={i} />)}
+      </Section>
 
-      {completed.length > 0 && (
-        <section>
-          <h2 className="font-display text-xs uppercase tracking-widest text-gray-500 mb-3">✅ Completed</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {completed.map((m: Match) => <MatchCard key={m.id} match={m} />)}
-          </div>
-        </section>
-      )}
+      <Section title="Filed &amp; archived" count={completed.length}>
+        {completed.map((m: Match, i: number) => <MatchRow key={m.id} match={m} idx={i} />)}
+      </Section>
     </div>
   );
 }

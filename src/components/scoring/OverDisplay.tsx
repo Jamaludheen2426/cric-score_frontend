@@ -11,51 +11,56 @@ interface Props {
 }
 
 export function OverDisplay({ balls, overNumber, legalBalls, totalOvers }: Props) {
-  const slots = Array(6).fill(null);
+  const overRuns = balls.reduce((sum, b) => sum + b.runs + b.extras, 0);
+  const isDeath = totalOvers > 0 && overNumber > totalOvers - 4;
+  // Build the 6 legal slots from legal balls so far
+  const legalBallsList = balls.filter(b => !b.is_wide && !b.is_noball);
+  const slots = Array(6).fill(null).map((_, i) => legalBallsList[i] || null);
+  const extraBalls = balls.filter(b => b.is_wide || b.is_noball);
 
   return (
-    <div className="card">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-display text-xs uppercase tracking-widest text-gray-500">
-          Over {overNumber} of {totalOvers}
-        </h3>
-        <span className="text-xs text-gray-600 font-mono">{legalBalls}/6 balls</span>
-      </div>
-      <div className="flex gap-2 flex-wrap">
-        {slots.map((_, i) => {
-          const legalBallsSoFar = balls.filter(b => !b.is_wide && !b.is_noball);
-          const ball = legalBallsSoFar[i];
-          return (
-            <div
-              key={i}
-              className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-display font-bold transition-all ${
-                ball
-                  ? `${getBallColor(ball)} animate-ball-in`
-                  : i < legalBalls
-                  ? 'bg-pitch-600/20 border border-pitch-500/40'
-                  : 'bg-gray-800 border border-gray-700 text-gray-700'
-              }`}
-            >
-              {ball ? getBallLabel(ball) : i + 1}
-            </div>
-          );
-        })}
-        {/* Show extra balls (wides/noballs) */}
-        {balls.filter(b => b.is_wide || b.is_noball).map((ball, i) => (
-          <div
-            key={`extra-${i}`}
-            className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-display font-bold animate-ball-in ${getBallColor(ball)}`}
-          >
-            {getBallLabel(ball)}
-          </div>
-        ))}
-      </div>
-      {/* Over runs summary */}
-      {balls.length > 0 && (
-        <div className="mt-2 text-xs text-gray-600 font-mono">
-          {balls.reduce((sum, b) => sum + b.runs + b.extras, 0)} runs this over
+    <section className="slab">
+      <header className="flex items-center justify-between mb-4">
+        <div className="flex items-baseline gap-3">
+          <span className="overline">this over</span>
+          <span className="font-display text-xl uppercase text-ink">
+            Over <span className="text-saffron-500">{overNumber}</span> <span className="text-ink-dim">of {totalOvers}</span>
+          </span>
+          {isDeath && (
+            <span className="badge-pending">death overs</span>
+          )}
         </div>
-      )}
-    </div>
+        <span className="font-mono text-[11px] text-ink-dim uppercase tracking-widest">{legalBalls}/6 balls</span>
+      </header>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {slots.map((ball, i) => ball ? (
+          <span key={i} className={getBallColor(ball)} title={getBallLabel(ball)}>
+            {getBallLabel(ball)}
+          </span>
+        ) : (
+          <span key={i} className="pellet pellet-dot text-ink-dim">{i + 1}</span>
+        ))}
+        {extraBalls.length > 0 && (
+          <>
+            <span className="px-1 text-ink-dim font-mono text-[11px] uppercase tracking-widest">extras</span>
+            {extraBalls.map((b, i) => (
+              <span key={`x-${i}`} className={getBallColor(b)}>
+                {getBallLabel(b)}
+              </span>
+            ))}
+          </>
+        )}
+      </div>
+
+      <footer className="mt-4 pt-3 border-t border-canvas-ridge flex items-baseline justify-between">
+        <span className="font-mono text-[11px] text-ink-dim uppercase tracking-widest">
+          this over: <span className="text-ink">{overRuns} runs</span>
+        </span>
+        <span className="font-mono text-[11px] text-ink-dim uppercase tracking-widest">
+          balls bowled: <span className="text-ink">{balls.length}</span>
+        </span>
+      </footer>
+    </section>
   );
 }

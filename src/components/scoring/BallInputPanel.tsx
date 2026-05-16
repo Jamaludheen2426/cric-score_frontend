@@ -10,7 +10,14 @@ interface Props {
 
 type BallType = 'normal' | 'wide' | 'noball';
 
-const RUN_BTNS = [0, 1, 2, 3, 4, 6];
+const RUN_BTNS: Array<{ runs: number; kind: 'dot' | 'run' | 'four' | 'six' }> = [
+  { runs: 0, kind: 'dot' },
+  { runs: 1, kind: 'run' },
+  { runs: 2, kind: 'run' },
+  { runs: 3, kind: 'run' },
+  { runs: 4, kind: 'four' },
+  { runs: 6, kind: 'six' },
+];
 
 export function BallInputPanel({ onBall, disabled, isLoading }: Props) {
   const [ballType, setBallType] = useState<BallType>('normal');
@@ -34,74 +41,86 @@ export function BallInputPanel({ onBall, disabled, isLoading }: Props) {
     setBallType('normal');
   };
 
-  const btnBase = 'h-16 rounded-xl font-display font-bold text-lg transition-all active:scale-95 disabled:opacity-30 select-none';
+  const kindClass = (kind: string) => {
+    switch (kind) {
+      case 'dot':  return 'border-canvas-ridge bg-canvas-raised text-ink-muted hover:border-ink-muted';
+      case 'run':  return 'border-canvas-ridge bg-canvas-raised text-ink hover:border-ink hover:bg-canvas-ridge';
+      case 'four': return 'border-pitch-500 bg-pitch-500/15 text-pitch-400 hover:bg-pitch-500/25';
+      case 'six':  return 'border-saffron-500 bg-saffron-500 text-canvas hover:bg-saffron-400';
+      default:     return '';
+    }
+  };
 
   return (
-    <div className={`card transition-opacity ${disabled ? 'opacity-60' : ''}`}>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-display text-xs uppercase tracking-widest text-gray-500">Ball Input</h3>
-        {isLoading && (
-          <span className="text-xs text-pitch-400 font-display animate-pulse">Saving...</span>
-        )}
-      </div>
+    <section className={`slab transition-opacity ${disabled ? 'opacity-60' : ''}`}>
+      <header className="flex items-center justify-between mb-5">
+        <span className="overline">scorer&apos;s desk</span>
+        <div className="flex items-center gap-3">
+          {isLoading && <span className="font-mono text-[10px] text-saffron-500 uppercase tracking-widest animate-flicker">filing…</span>}
+          <span className="eyebrow">ball input</span>
+        </div>
+      </header>
 
-      {/* Ball type toggle */}
-      <div className="flex gap-2 mb-4">
+      {/* Ball type segmented switch */}
+      <div className="grid grid-cols-3 gap-px bg-canvas-ridge mb-5">
         {([
-          { key: 'normal', label: 'Normal' },
-          { key: 'wide', label: 'Wide' },
-          { key: 'noball', label: 'No-ball' },
-        ] as const).map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => setBallType(key)}
-            className={`flex-1 py-1.5 rounded-lg border text-sm font-display transition-colors ${
-              ballType === key
-                ? key === 'wide' || key === 'noball'
-                  ? 'bg-amber-500/20 border-amber-500 text-amber-400'
-                  : 'bg-pitch-600/20 border-pitch-500 text-pitch-400'
-                : 'bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-600'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+          { key: 'normal', label: 'Legal',   sub: '6 ball' },
+          { key: 'wide',   label: 'Wide',    sub: '+1 / +2 death' },
+          { key: 'noball', label: 'No-ball', sub: '+1' },
+        ] as const).map(opt => {
+          const active = ballType === opt.key;
+          return (
+            <button
+              key={opt.key}
+              onClick={() => setBallType(opt.key)}
+              className={`px-4 py-3 text-left transition-colors ${
+                active
+                  ? opt.key === 'normal'
+                    ? 'bg-saffron-500 text-canvas'
+                    : 'bg-ochre-500 text-canvas'
+                  : 'bg-canvas-raised text-ink-muted hover:bg-canvas-ridge'
+              }`}
+            >
+              <div className={`font-display text-[16px] uppercase tracking-widest2 ${active ? '' : 'text-ink'}`}>
+                {opt.label}
+              </div>
+              <div className={`font-mono text-[10px] uppercase tracking-widest ${active ? 'text-canvas/70' : 'text-ink-dim'}`}>
+                {opt.sub}
+              </div>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Run buttons */}
-      <div className="grid grid-cols-3 gap-2 mb-2">
-        {RUN_BTNS.map(runs => (
+      {/* Run grid */}
+      <div className="grid grid-cols-6 gap-2">
+        {RUN_BTNS.map(({ runs, kind }) => (
           <button
             key={runs}
             onClick={() => handleRun(runs)}
             disabled={disabled}
-            className={`${btnBase} ${
-              runs === 6
-                ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-900/30'
-                : runs === 4
-                ? 'bg-pitch-700 hover:bg-pitch-600 text-white shadow-lg shadow-pitch-900/30'
-                : runs === 0
-                ? 'bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700'
-                : 'bg-gray-700 hover:bg-gray-600 text-white'
-            }`}
+            className={`relative h-20 border-2 font-display text-3xl font-black transition-all active:translate-y-[1px] disabled:opacity-40 ${kindClass(kind)}`}
           >
-            {ballType === 'wide' || ballType === 'noball'
-              ? runs === 0
-                ? `${ballType === 'wide' ? 'Wd' : 'Nb'}+0`
-                : `+${runs}`
-              : runs}
+            <span>{ballType !== 'normal' ? (runs === 0 ? '0' : `+${runs}`) : runs}</span>
+            {kind === 'four' && <span className="absolute top-1.5 right-2 font-mono text-[9px] uppercase tracking-widest opacity-70">boundary</span>}
+            {kind === 'six' && <span className="absolute top-1.5 right-2 font-mono text-[9px] uppercase tracking-widest text-canvas/70">maximum</span>}
+            {kind === 'dot' && <span className="absolute top-1.5 right-2 font-mono text-[9px] uppercase tracking-widest opacity-50">dot</span>}
           </button>
         ))}
       </div>
 
-      {/* Wicket button */}
+      {/* Wicket */}
       <button
         onClick={handleWicket}
         disabled={disabled}
-        className={`${btnBase} w-full bg-rose-700 hover:bg-rose-600 text-white shadow-lg shadow-rose-900/30 mt-1`}
+        className="mt-3 w-full h-16 bg-wicket-500 hover:bg-wicket-600 text-ink font-display text-2xl uppercase tracking-widest2 transition-colors active:translate-y-[1px] disabled:opacity-40"
       >
-        🏏 WICKET
+        Wicket
       </button>
-    </div>
+
+      <p className="mt-4 font-mono text-[10px] text-ink-dim uppercase tracking-widest text-center">
+        select a delivery type, then tap the run — wicket clears modifiers.
+      </p>
+    </section>
   );
 }
