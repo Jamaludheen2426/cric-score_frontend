@@ -39,7 +39,7 @@ export function BowlerStats({ bowler, over, bowlingCards }: Props) {
             Ball {over.legal_balls}/6 · Over {over.over_number}
           </div>
         </div>
-        <span className="num-md text-right">{card?.overs?.toFixed(1) ?? '0.0'}</span>
+        <span className="num-md text-right">{card?.overs != null ? Number(card.overs).toFixed(1) : '0.0'}</span>
         <span className="num-md text-right">{card?.runs ?? 0}</span>
         <span className="num-md text-accent text-right">{card?.wickets ?? 0}</span>
         <span className="num-sm text-right">{economy}</span>

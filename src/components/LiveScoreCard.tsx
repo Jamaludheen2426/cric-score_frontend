@@ -211,7 +211,7 @@ export function LiveScoreCard({ liveData, match }: Props) {
                           </span>
                         </div>
                       </td>
-                      <td className="text-right py-3.5 px-2 num-sm">{card.overs?.toFixed(1) ?? '0.0'}</td>
+                      <td className="text-right py-3.5 px-2 num-sm">{card.overs != null ? Number(card.overs).toFixed(1) : '0.0'}</td>
                       <td className="text-right py-3.5 px-2 num-sm">{card.runs}</td>
                       <td className="text-right py-3.5 px-2 num-md text-accent">{card.wickets}</td>
                       <td className="text-right py-3.5 px-2 num-sm">{economy}</td>
