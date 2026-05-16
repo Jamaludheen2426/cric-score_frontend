@@ -237,29 +237,84 @@ export function LiveScoreCard({ liveData, match }: Props) {
             </span>
           </header>
           {inn.battingCards && (
-            <div className="overflow-x-auto -mx-2">
-              <table className="w-full text-[13px] min-w-[420px]">
-                <thead>
-                  <tr className="border-b border-hairline">
-                    <th className="text-left py-2 px-2 eyebrow">Batsman</th>
-                    <th className="text-right py-2 px-2 eyebrow">R</th>
-                    <th className="text-right py-2 px-2 eyebrow">B</th>
-                    <th className="text-right py-2 px-2 eyebrow">SR</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {inn.battingCards.sort((a, b) => a.batting_position - b.batting_position).map(card => (
-                    <tr key={card.id} className="border-b border-hairline last:border-b-0">
-                      <td className="py-2.5 px-2 text-ink-soft">{card.player?.name}</td>
-                      <td className="text-right py-2.5 px-2 num-sm">{card.runs}</td>
-                      <td className="text-right py-2.5 px-2 num-sm">{card.balls}</td>
-                      <td className="text-right py-2.5 px-2 num-sm">
-                        {card.balls > 0 ? ((card.runs / card.balls) * 100).toFixed(1) : '—'}
-                      </td>
+            <div className="mb-6">
+              <p className="eyebrow mb-3">Batting</p>
+              <div className="overflow-x-auto -mx-2">
+                <table className="w-full text-[13px] min-w-[480px]">
+                  <thead>
+                    <tr className="border-b border-hairline">
+                      <th className="text-left py-2 px-2 eyebrow">Batsman</th>
+                      <th className="text-left py-2 px-2 eyebrow font-normal normal-case tracking-normal text-[11px]">Dismissal</th>
+                      <th className="text-right py-2 px-2 eyebrow">R</th>
+                      <th className="text-right py-2 px-2 eyebrow">B</th>
+                      <th className="text-right py-2 px-2 eyebrow">4s</th>
+                      <th className="text-right py-2 px-2 eyebrow">6s</th>
+                      <th className="text-right py-2 px-2 eyebrow">SR</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {inn.battingCards.sort((a, b) => a.batting_position - b.batting_position).map(card => (
+                      <tr key={card.id} className="border-b border-hairline last:border-b-0">
+                        <td className="py-2.5 px-2 font-medium text-ink">{card.player?.name}</td>
+                        <td className="py-2.5 px-2 text-[12px] text-ink-mute">
+                          {card.is_out ? (
+                            <>
+                              {card.dismissal_type?.replace(/_/g, ' ')}
+                              {card.bowler && ` · b. ${card.bowler.name}`}
+                            </>
+                          ) : (
+                            <span className="text-ink-faint">not out</span>
+                          )}
+                        </td>
+                        <td className="text-right py-2.5 px-2 num-sm text-ink">{card.runs}</td>
+                        <td className="text-right py-2.5 px-2 num-sm">{card.balls}</td>
+                        <td className="text-right py-2.5 px-2 num-sm">{card.fours}</td>
+                        <td className="text-right py-2.5 px-2 num-sm">{card.sixes}</td>
+                        <td className="text-right py-2.5 px-2 num-sm">
+                          {card.balls > 0 ? ((card.runs / card.balls) * 100).toFixed(1) : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {inn.bowlingCards && inn.bowlingCards.length > 0 && (
+            <div>
+              <p className="eyebrow mb-3">Bowling · {inn.bowlingTeam?.name}</p>
+              <div className="overflow-x-auto -mx-2">
+                <table className="w-full text-[13px] min-w-[420px]">
+                  <thead>
+                    <tr className="border-b border-hairline">
+                      <th className="text-left py-2 px-2 eyebrow">Bowler</th>
+                      <th className="text-right py-2 px-2 eyebrow">O</th>
+                      <th className="text-right py-2 px-2 eyebrow">R</th>
+                      <th className="text-right py-2 px-2 eyebrow">W</th>
+                      <th className="text-right py-2 px-2 eyebrow">Econ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inn.bowlingCards.map(card => {
+                      const economy = card.legal_balls > 0
+                        ? ((card.runs / card.legal_balls) * 6).toFixed(2)
+                        : '—';
+                      return (
+                        <tr key={card.id} className="border-b border-hairline last:border-b-0">
+                          <td className="py-2.5 px-2 font-medium text-ink">{card.player?.name}</td>
+                          <td className="text-right py-2.5 px-2 num-sm">
+                            {card.overs != null ? Number(card.overs).toFixed(1) : '0.0'}
+                          </td>
+                          <td className="text-right py-2.5 px-2 num-sm">{card.runs}</td>
+                          <td className="text-right py-2.5 px-2 num-sm text-accent">{card.wickets}</td>
+                          <td className="text-right py-2.5 px-2 num-sm">{economy}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </section>

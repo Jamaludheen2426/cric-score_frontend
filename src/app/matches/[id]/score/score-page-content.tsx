@@ -64,7 +64,9 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
       setShowWicketModal(true);
     } else {
       addBall.mutate(data, {
-        onSuccess: () => {
+        onSuccess: (res: any) => {
+          // Innings/match closed — no new bowler needed
+          if (res?.allOut || res?.oversFinished || res?.targetReached) return;
           if ((currentOver?.legal_balls || 0) + 1 >= 6 && !data.is_wide && !data.is_noball) {
             setShowBowlerModal(true);
           }
@@ -76,7 +78,8 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
   const handleWicketConfirm = (wicketData: any) => {
     setShowWicketModal(false);
     addBall.mutate({ ...wicketData, runs: pendingBallRuns }, {
-      onSuccess: () => {
+      onSuccess: (res: any) => {
+        if (res?.allOut || res?.oversFinished || res?.targetReached) return;
         if ((currentOver?.legal_balls || 0) + 1 >= 6) setShowBowlerModal(true);
       },
     });
