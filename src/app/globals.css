@@ -54,6 +54,11 @@
   .page-narrow  { @apply max-w-[760px]  mx-auto px-6 sm:px-10 py-16 sm:py-20; }
   .page-wide    { @apply max-w-[1320px] mx-auto px-6 sm:px-10 py-12; }
 
+  /* Editorial form layout — heading on the left, fields on the right */
+  .form-page    { @apply max-w-[1200px] mx-auto px-6 sm:px-10 py-16 sm:py-20; }
+  .form-grid    { @apply grid lg:grid-cols-[340px_1fr] gap-12 lg:gap-20; }
+  .form-aside   { @apply lg:sticky lg:top-24 lg:self-start; }
+
   /* ── Labels ─────────────────────────────────────── */
   .eyebrow {
     @apply text-[11px] font-medium uppercase text-ink-mute;
