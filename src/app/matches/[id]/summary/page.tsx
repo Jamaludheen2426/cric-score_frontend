@@ -1,5 +1,6 @@
 import { SummaryContent } from './summary-content';
 
-export default function SummaryPage({ params }: { params: { id: string } }) {
-  return <SummaryContent matchId={Number(params.id)} />;
+export default async function SummaryPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <SummaryContent matchId={Number(id)} />;
 }

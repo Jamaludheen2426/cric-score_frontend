@@ -1,5 +1,6 @@
 import { TeamDetailContent } from './team-detail-content';
 
-export default function TeamPage({ params }: { params: { id: string } }) {
-  return <TeamDetailContent teamId={Number(params.id)} />;
+export default async function TeamPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <TeamDetailContent teamId={Number(id)} />;
 }

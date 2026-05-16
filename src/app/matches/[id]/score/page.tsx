@@ -1,5 +1,6 @@
 import { ScorePageContent } from './score-page-content';
 
-export default function ScorePage({ params }: { params: { id: string } }) {
-  return <ScorePageContent matchId={Number(params.id)} />;
+export default async function ScorePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <ScorePageContent matchId={Number(id)} />;
 }

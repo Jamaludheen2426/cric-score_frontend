@@ -1,5 +1,6 @@
 import { LiveScorePage } from './live-score-page';
 
-export default function LivePage({ params }: { params: { id: string } }) {
-  return <LiveScorePage matchId={Number(params.id)} />;
+export default async function LivePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <LiveScorePage matchId={Number(id)} />;
 }
