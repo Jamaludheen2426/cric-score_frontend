@@ -31,9 +31,10 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
   const { data: match, isLoading } = useMatch(matchId);
   const { data: initialLiveScore } = useLiveScore(match?.share_token || '');
 
-  // Seed liveData from HTTP fetch until SSE delivers an update
+  // Sync liveData from HTTP fetch (initial load + after mutations refetch).
+  // SSE will overwrite this with newer data as it arrives.
   useEffect(() => {
-    if (initialLiveScore && !liveData) {
+    if (initialLiveScore) {
       setLiveData(initialLiveScore);
     }
   }, [initialLiveScore]);
@@ -127,13 +128,20 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
         </div>
       </div>
 
-      {match.status === 'pending' && !liveData && (
+      {match.status === 'pending' && (
         <div className="card text-center py-16">
           <p className="text-gray-400 font-display text-lg mb-2">Match not started yet</p>
           <p className="text-gray-600 text-sm mb-6">Set toss result and opening players to begin scoring</p>
           <button onClick={() => setShowStartModal(true)} className="btn-primary px-8 py-3 text-base">
             Start Match →
           </button>
+        </div>
+      )}
+
+      {/* Live match but no live data yet (brief loading window) */}
+      {match.status === 'live' && (!liveData || ((liveData?.innings?.length ?? 0) === 0)) && (
+        <div className="card text-center py-12">
+          <p className="text-gray-500 font-display">Loading match data...</p>
         </div>
       )}
 
@@ -203,8 +211,10 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
         </div>
       )}
 
-      {/* All-out: live match, innings ended, no active innings */}
-      {match.status === 'live' && liveData && !currentInnings && (
+      {/* Last innings ended (all-out or overs finished) — show only when an innings actually closed */}
+      {match.status === 'live' && liveData && !currentInnings &&
+       (liveData?.innings?.length ?? 0) > 0 &&
+       liveData?.innings?.[liveData.innings.length - 1]?.status === 'completed' && (
         <div className="card text-center py-12 space-y-4">
           {liveData && <ScoreHeader liveData={liveData} match={match} />}
           <p className="text-amber-400 font-display text-lg mt-4">All out!</p>
