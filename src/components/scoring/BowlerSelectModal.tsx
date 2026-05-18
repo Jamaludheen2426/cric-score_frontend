@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { X } from 'lucide-react';
 import { Player } from '@/types';
 
 interface Props {
@@ -15,47 +16,26 @@ export function BowlerSelectModal({ players, currentBowlerId, onSelect, onClose,
   const [selected, setSelected] = useState<number | null>(null);
 
   return (
-    <div className="fixed inset-0 bg-ink/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-surface border border-hairline rounded-2xl w-full max-w-md p-8 shadow-lift">
-        <p className="eyebrow mb-3">Change of bowler</p>
-        <h2 className="text-h2 mb-2">Next at the mark</h2>
-        <p className="text-[14px] text-ink-soft mb-6">
-          The over is complete. Pick the new bowler.
-        </p>
-
-        <div className="max-h-72 overflow-y-auto -mx-2 mb-6 border-y border-hairline">
+    <div className="fixed inset-0 z-[70] grid place-items-center bg-black/85 p-4">
+      <div className="w-full max-w-[420px] rounded-lg border border-[var(--border)] bg-[var(--bg-card)]">
+        <header className="flex h-11 items-center justify-between border-b border-[var(--border)] px-3">
+          <h2 className="text-[14px] font-bold uppercase">Select bowler</h2>
+          <button onClick={onClose} className="text-[var(--text-secondary)]"><X size={18} /></button>
+        </header>
+        <div className="max-h-[320px] overflow-y-auto">
           {players.map(p => {
-            const isJustBowled = p.id === currentBowlerId;
-            const isSelected = selected === p.id;
+            const disabled = p.id === currentBowlerId;
+            const active = selected === p.id;
             return (
-              <button
-                key={p.id}
-                onClick={() => setSelected(p.id)}
-                disabled={isJustBowled}
-                className={`w-full text-left px-4 py-3.5 transition-colors border-l-2 ${
-                  isSelected ? 'bg-accent-soft border-l-accent text-ink'
-                  : isJustBowled ? 'opacity-40 cursor-not-allowed border-l-transparent text-ink-soft'
-                  : 'border-l-transparent text-ink hover:bg-surface-soft'
-                }`}
-              >
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="font-medium text-[15px]">{p.name}</span>
-                  {isJustBowled && <span className="text-[11px] text-ink-mute">just bowled</span>}
-                </div>
+              <button key={p.id} disabled={disabled} onClick={() => setSelected(p.id)} className={`flex h-11 w-full items-center justify-between border-b border-[var(--border-subtle)] px-3 text-left ${active ? 'border-l-2 border-l-[var(--green-bright)] bg-[#0f2318]' : 'bg-[var(--bg-elevated)]'} ${disabled ? 'text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}>
+                <span className="text-[14px] font-semibold">{p.name}</span>
+                {disabled && <span className="text-[11px] text-[var(--text-muted)]">just bowled</span>}
               </button>
             );
           })}
         </div>
-
-        <div className="flex gap-2 justify-end">
-          <button onClick={onClose} className="btn-ghost">Cancel</button>
-          <button
-            onClick={() => selected && onSelect(selected)}
-            disabled={!selected || isLoading}
-            className="btn-primary"
-          >
-            {isLoading ? 'Saving…' : 'Confirm →'}
-          </button>
+        <div className="p-3">
+          <button disabled={!selected || isLoading} onClick={() => selected && onSelect(selected)} className="btn btn-primary w-full">Start over</button>
         </div>
       </div>
     </div>

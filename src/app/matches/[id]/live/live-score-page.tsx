@@ -35,26 +35,21 @@ export function LiveScorePage({ matchId }: { matchId: number }) {
   if (!match) return <div className="page text-ink-soft">Match not found.</div>;
 
   return (
-    <div className="page">
-      <header className="flex flex-wrap items-end justify-between gap-6 mb-12 pb-8 border-b border-hairline">
-        <div>
-          <div className="flex items-center gap-3 mb-3">
+    <div className="min-h-screen bg-[var(--bg-app)]">
+      <header className="flex h-12 items-center justify-between border-b border-[var(--border)] bg-[var(--bg-card)] px-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
             <span className={`live-dot ${connected ? '' : 'opacity-30'}`} />
-            <p className="eyebrow">{connected ? 'On air' : 'Reconnecting…'}</p>
-            <Link href="/matches" className="text-[12px] text-ink-mute hover:text-ink">
-              ← All fixtures
-            </Link>
+            <p className="text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--green-text)]">{connected ? 'Live' : 'Reconnecting'}</p>
           </div>
-          <h1 className="text-title mb-3">{match.title}</h1>
-          <div className="flex items-baseline gap-2.5 text-[15px] text-ink-soft">
-            <span className="text-ink">{match.teamA?.name}</span>
-            <span className="text-ink-mute">vs</span>
-            <span className="text-ink">{match.teamB?.name}</span>
-          </div>
+          <p className="truncate text-[13px] font-semibold text-[var(--text-secondary)]">{match.teamA?.name} vs {match.teamB?.name}</p>
         </div>
-        <button onClick={copyShareLink} className="btn-secondary btn-sm">
-          {copied ? 'Copied' : 'Share this ticker'}
-        </button>
+        <div className="flex items-center gap-2">
+          <Link href="/matches" className="btn btn-secondary h-8 px-3">Matches</Link>
+          <button onClick={copyShareLink} className="btn btn-secondary h-8 px-3">
+            {copied ? 'Copied' : 'Share'}
+          </button>
+        </div>
       </header>
 
       {!liveData && <PageLoader label="Connecting" />}

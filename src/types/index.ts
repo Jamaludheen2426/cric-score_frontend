@@ -56,8 +56,10 @@ export interface Innings {
   onStrike?: Player;
   battingCards?: BattingCard[];
   bowlingCards?: BowlingCard[];
-  run_rate?: number;
-  required_rate?: number;
+  run_rate?: number | null;
+  required_rate?: number | null;
+  runs_needed?: number | null;
+  balls_left?: number | null;
 }
 
 export interface BattingCard {

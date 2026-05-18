@@ -1,113 +1,78 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { X } from 'lucide-react';
 import { Player, WicketType } from '@/types';
 
 const WICKET_TYPES: { value: WicketType; label: string }[] = [
-  { value: 'bowled',            label: 'Bowled' },
-  { value: 'caught',            label: 'Caught' },
-  { value: 'lbw',               label: 'LBW' },
-  { value: 'run_out',           label: 'Run out' },
-  { value: 'stumped',           label: 'Stumped' },
-  { value: 'hit_wicket',        label: 'Hit wicket' },
-  { value: 'obstructing_field', label: 'Obstructing' },
-  { value: 'retired',           label: 'Retired' },
+  { value: 'bowled', label: 'Bowled' },
+  { value: 'caught', label: 'Caught' },
+  { value: 'lbw', label: 'LBW' },
+  { value: 'run_out', label: 'Run Out' },
+  { value: 'stumped', label: 'Stumped' },
+  { value: 'hit_wicket', label: 'Hit Wicket' },
+  { value: 'retired', label: 'Retired' },
 ];
 
 interface Props {
   batsmen: (Player | undefined)[];
   fielders: Player[];
   newBatsmenPool: Player[];
+  isNoBall?: boolean;
   onConfirm: (data: any) => void;
   onClose: () => void;
 }
 
-export function WicketModal({ batsmen, newBatsmenPool, onConfirm, onClose }: Props) {
+const NO_BALL_WICKET_TYPES: WicketType[] = ['run_out', 'obstructing_field', 'retired'];
+
+export function WicketModal({ batsmen, fielders, newBatsmenPool, isNoBall, onConfirm, onClose }: Props) {
   const [wicketType, setWicketType] = useState<WicketType>('bowled');
   const [dismissedId, setDismissedId] = useState<number>(batsmen[0]?.id || 0);
+  const [fielderId, setFielderId] = useState('');
   const [newBatsmanId, setNewBatsmanId] = useState('');
 
-  const handleConfirm = () => {
-    if (!newBatsmanId && newBatsmenPool.length > 0) return alert('Select the new batsman');
-    onConfirm({
-      is_wicket: true,
-      wicket_type: wicketType,
-      dismissed_player_id: dismissedId,
-      new_batsman_id: newBatsmanId ? Number(newBatsmanId) : undefined,
-    });
-  };
+  useEffect(() => {
+    if (isNoBall && !NO_BALL_WICKET_TYPES.includes(wicketType)) setWicketType('run_out');
+  }, [isNoBall, wicketType]);
+
+  const needsFielder = ['caught', 'run_out', 'stumped'].includes(wicketType);
 
   return (
-    <div className="fixed inset-0 bg-ink/30 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-surface border border-hairline rounded-2xl w-full max-w-xl my-8 p-8 shadow-lift">
-        <p className="eyebrow mb-3 text-wicket">Wicket</p>
-        <h2 className="text-h2 mb-2">How was the batsman dismissed?</h2>
-        <p className="text-[14px] text-ink-soft mb-6">File the mode and the next man in.</p>
-
-        <div className="space-y-6">
-          <div>
-            <label className="label">Mode of dismissal</label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {WICKET_TYPES.map(wt => {
-                const active = wicketType === wt.value;
-                return (
-                  <button
-                    key={wt.value}
-                    onClick={() => setWicketType(wt.value)}
-                    className={`px-3 py-2.5 rounded-md text-[13px] font-medium transition-all border ${
-                      active ? 'bg-wicket text-white border-wicket'
-                            : 'bg-surface text-ink border-hairline-strong hover:border-ink'
-                    }`}
-                  >
-                    {wt.label}
-                  </button>
-                );
-              })}
-            </div>
+    <div className="fixed inset-0 z-[70] grid place-items-center bg-black/85 p-4">
+      <div className="w-full max-w-[420px] rounded-lg border border-[var(--border)] bg-[var(--bg-card)]">
+        <header className="flex h-11 items-center justify-between border-b border-[var(--border)] px-3">
+          <h2 className="text-[14px] font-bold uppercase">Wicket</h2>
+          <button onClick={onClose} className="text-[var(--text-secondary)]"><X size={18} /></button>
+        </header>
+        <div className="grid gap-3 p-3">
+          <p className="eyebrow">Dismissal type</p>
+          <div className="grid grid-cols-3 gap-2">
+            {WICKET_TYPES.map(wt => {
+              const disabled = !!isNoBall && !NO_BALL_WICKET_TYPES.includes(wt.value);
+              const active = wicketType === wt.value;
+              return <button key={wt.value} disabled={disabled} onClick={() => setWicketType(wt.value)} className={`h-10 rounded border text-[13px] font-semibold ${active ? 'border-[var(--red)] bg-[#3d0f0f] text-[var(--red-text)]' : disabled ? 'border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-muted)]' : 'border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-primary)]'}`}>{wt.label}</button>;
+            })}
           </div>
-
-          <div>
-            <label className="label">Player dismissed</label>
-            <div className="grid grid-cols-2 gap-2">
-              {batsmen.filter(Boolean).map(b => {
-                const active = dismissedId === b!.id;
-                return (
-                  <button
-                    key={b!.id}
-                    onClick={() => setDismissedId(b!.id)}
-                    className={`px-4 py-3 rounded-md text-[14px] font-medium transition-all border ${
-                      active ? 'bg-wicket text-white border-wicket'
-                            : 'bg-surface text-ink border-hairline-strong hover:border-ink'
-                    }`}
-                  >
-                    {b!.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {newBatsmenPool.length > 0 ? (
-            <div>
-              <label className="label">Next man in</label>
-              <select className="input" value={newBatsmanId} onChange={e => setNewBatsmanId(e.target.value)}>
-                <option value="">Choose…</option>
-                {newBatsmenPool.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </div>
-          ) : (
-            <div className="p-4 rounded-md bg-accent-soft border border-accent/20">
-              <p className="text-[13px] font-medium text-accent">No batsmen left</p>
-              <p className="text-[13px] text-ink-soft mt-1">All out — the innings closes on this ball.</p>
-            </div>
+          {needsFielder && (
+            <select className="input" value={fielderId} onChange={e => setFielderId(e.target.value)}>
+              <option value="">Select fielder</option>
+              {fielders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+            </select>
           )}
-        </div>
-
-        <div className="flex gap-2 justify-end pt-6 mt-8 border-t border-hairline">
-          <button onClick={onClose} className="btn-ghost">Cancel</button>
-          <button onClick={handleConfirm} className="btn-danger">Confirm wicket →</button>
+          <select className="input" value={dismissedId} onChange={e => setDismissedId(Number(e.target.value))}>
+            {batsmen.filter(Boolean).map(b => <option key={b!.id} value={b!.id}>{b!.name}</option>)}
+          </select>
+          {newBatsmenPool.length > 0 && (
+            <select className="input" value={newBatsmanId} onChange={e => setNewBatsmanId(e.target.value)}>
+              <option value="">Next batsman</option>
+              {newBatsmenPool.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          )}
+          <button onClick={() => {
+            if (newBatsmenPool.length > 0 && !newBatsmanId) return alert('Select next batsman');
+            if (needsFielder && !fielderId) return alert('Select fielder');
+            onConfirm({ is_wicket: true, wicket_type: wicketType, dismissed_player_id: dismissedId, new_batsman_id: newBatsmanId ? Number(newBatsmanId) : undefined });
+          }} className="btn btn-danger h-11 w-full">Wicket confirmed</button>
         </div>
       </div>
     </div>

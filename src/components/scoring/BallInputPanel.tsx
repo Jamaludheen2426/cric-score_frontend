@@ -4,118 +4,55 @@ import { useState } from 'react';
 
 interface Props {
   onBall: (data: any) => void;
+  onUndo?: () => void;
   disabled?: boolean;
   isLoading?: boolean;
+  canUndo?: boolean;
 }
 
-type BallType = 'normal' | 'wide' | 'noball';
+type Extra = 'normal' | 'wide' | 'noball' | 'bye' | 'legbye';
+const RUNS = [0, 1, 2, 3, 4, 6];
 
-const RUN_BTNS: Array<{ runs: number; kind: 'dot' | 'run' | 'four' | 'six'; sub?: string }> = [
-  { runs: 0, kind: 'dot',  sub: 'dot' },
-  { runs: 1, kind: 'run' },
-  { runs: 2, kind: 'run' },
-  { runs: 3, kind: 'run' },
-  { runs: 4, kind: 'four', sub: 'boundary' },
-  { runs: 6, kind: 'six',  sub: 'maximum' },
-];
+export function BallInputPanel({ onBall, onUndo, disabled, isLoading, canUndo }: Props) {
+  const [runs, setRuns] = useState(0);
+  const [extra, setExtra] = useState<Extra>('normal');
 
-export function BallInputPanel({ onBall, disabled, isLoading }: Props) {
-  const [ballType, setBallType] = useState<BallType>('normal');
-
-  const handleRun = (runs: number) => {
+  const add = (isWicket = false) => {
     onBall({
       runs,
-      is_wide: ballType === 'wide',
-      is_noball: ballType === 'noball',
+      is_wide: extra === 'wide',
+      is_noball: extra === 'noball',
+      is_wicket: isWicket,
+      extras: extra === 'bye' || extra === 'legbye' ? runs : undefined,
     });
-    setBallType('normal');
-  };
-
-  const handleWicket = () => {
-    onBall({
-      runs: 0,
-      is_wide: false,
-      is_noball: ballType === 'noball',
-      is_wicket: true,
-    });
-    setBallType('normal');
-  };
-
-  const kindClass = (kind: string) => {
-    switch (kind) {
-      case 'dot':  return 'bg-surface border-hairline-strong text-ink-soft hover:border-ink hover:text-ink';
-      case 'run':  return 'bg-surface border-hairline-strong text-ink hover:border-ink hover:bg-surface-soft';
-      case 'four': return 'bg-pitch-soft border-pitch/30 text-pitch hover:border-pitch';
-      case 'six':  return 'bg-accent border-accent text-white hover:bg-accent-strong';
-      default:     return '';
-    }
+    setRuns(0);
+    setExtra('normal');
   };
 
   return (
-    <section className={`card rise rise-d3 transition-opacity ${disabled ? 'opacity-60' : ''}`}>
-      <header className="flex items-center justify-between mb-6">
-        <h3 className="text-h3">Ball input</h3>
-        {isLoading
-          ? <span className="text-[12px] text-accent font-medium">Saving…</span>
-          : <span className="eyebrow">scorer&apos;s desk</span>}
-      </header>
-
-      {/* Ball type segmented switch */}
-      <div className="grid grid-cols-3 gap-2 mb-6 p-1 bg-surface-soft rounded-lg">
-        {([
-          { key: 'normal', label: 'Legal',   sub: 'counts' },
-          { key: 'wide',   label: 'Wide',    sub: '+1 / +2 death' },
-          { key: 'noball', label: 'No-ball', sub: '+1' },
-        ] as const).map(opt => {
-          const active = ballType === opt.key;
-          return (
-            <button
-              key={opt.key}
-              onClick={() => setBallType(opt.key)}
-              className={`px-4 py-2.5 rounded-md transition-all ${
-                active
-                  ? 'bg-surface text-ink shadow-soft'
-                  : 'text-ink-soft hover:text-ink'
-              }`}
-            >
-              <div className="font-medium text-[14px]">{opt.label}</div>
-              <div className="text-[11px] text-ink-mute mt-0.5">{opt.sub}</div>
-            </button>
-          );
-        })}
+    <section className="fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--border)] bg-[var(--bg-card)] px-3 pb-4 pt-2">
+      <div className="mx-auto max-w-[960px]">
+        <div className="mb-2 flex gap-1.5">
+          {RUNS.map(r => (
+            <button key={r} disabled={disabled} onClick={() => setRuns(r)} className={`h-11 flex-1 rounded-md border text-[16px] font-bold ${runs === r ? 'border-[var(--green-bright)] bg-[#1a3a1a] text-[var(--green-text)]' : 'border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-primary)]'}`}>{r}</button>
+          ))}
+        </div>
+        <div className="mb-2 flex gap-1.5">
+          {[
+            ['wide', 'Wide', 'border-[var(--blue)] bg-[#0d1f3c] text-[var(--blue-text)]'],
+            ['noball', 'No Ball', 'border-[var(--orange)] bg-[#2a1a00] text-[var(--orange-text)]'],
+            ['bye', 'Bye', 'border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-secondary)]'],
+            ['legbye', 'Leg Bye', 'border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-secondary)]'],
+          ].map(([key, label, cls]) => (
+            <button key={key} disabled={disabled} onClick={() => setExtra(extra === key ? 'normal' : key as Extra)} className={`h-9 flex-1 rounded-md border text-[12px] font-bold uppercase ${extra === key ? cls : 'border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-secondary)]'}`}>{label}</button>
+          ))}
+        </div>
+        <div className="flex gap-1.5">
+          <button disabled={disabled} onClick={() => add(true)} className="h-11 flex-1 rounded-md border border-[var(--red)] bg-[#3d0f0f] text-[13px] font-bold uppercase text-[var(--red-text)]">Wicket</button>
+          <button disabled={!canUndo || disabled} onClick={onUndo} className="h-11 w-20 rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] text-[13px] font-bold uppercase text-[var(--text-secondary)]">Undo</button>
+          <button disabled={disabled} onClick={() => add(false)} className="h-11 flex-[1.5] rounded-md bg-[var(--green)] text-[13px] font-bold uppercase text-white">{isLoading ? 'Saving' : 'Add ball'}</button>
+        </div>
       </div>
-
-      {/* Run grid */}
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
-        {RUN_BTNS.map(({ runs, kind, sub }) => (
-          <button
-            key={runs}
-            onClick={() => handleRun(runs)}
-            disabled={disabled}
-            className={`relative h-20 sm:h-24 rounded-lg border font-semibold text-3xl transition-all active:translate-y-px disabled:opacity-40 ${kindClass(kind)}`}
-          >
-            <span>{ballType !== 'normal' ? (runs === 0 ? '0' : `+${runs}`) : runs}</span>
-            {sub && (
-              <span className={`absolute bottom-2 inset-x-0 text-[10px] uppercase tracking-eyebrow font-normal opacity-70 ${kind === 'six' ? 'text-white/80' : ''}`}>
-                {sub}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Wicket */}
-      <button
-        onClick={handleWicket}
-        disabled={disabled}
-        className="mt-3 w-full h-14 sm:h-16 rounded-lg bg-surface border border-wicket text-wicket hover:bg-wicket hover:text-white transition-all font-medium text-[16px] tracking-wide active:translate-y-px disabled:opacity-40"
-      >
-        Wicket
-      </button>
-
-      <p className="mt-5 text-[12px] text-ink-mute text-center">
-        Choose a delivery type, then tap the run.
-      </p>
     </section>
   );
 }

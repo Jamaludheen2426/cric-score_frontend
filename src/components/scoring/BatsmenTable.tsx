@@ -11,47 +11,21 @@ export function BatsmenTable({ innings }: Props) {
   const cards = innings.battingCards || [];
 
   return (
-    <section className="card rise rise-d2">
-      <header className="flex items-center justify-between mb-5">
-        <h3 className="text-h3">Batting</h3>
-        <span className="eyebrow">at the crease</span>
-      </header>
-
-      <div className="grid grid-cols-[1fr_44px_44px_36px_36px_56px] gap-3 pb-3 mb-1 border-b border-hairline">
-        <span className="eyebrow">Batsman</span>
-        <span className="eyebrow text-right">R</span>
-        <span className="eyebrow text-right">B</span>
-        <span className="eyebrow text-right">4s</span>
-        <span className="eyebrow text-right">6s</span>
-        <span className="eyebrow text-right">SR</span>
-      </div>
-
-      {batsmen.map(b => {
+    <section className="border-b border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2">
+      {batsmen.map((b) => {
         if (!b) return null;
         const card = cards.find(c => c.player_id === b.id);
-        const isOnStrike = innings.on_strike_batsman_id === b.id;
-        const sr = card && card.balls > 0 ? ((card.runs / card.balls) * 100).toFixed(1) : '—';
-
+        const onStrike = innings.on_strike_batsman_id === b.id;
+        const runs = card?.runs ?? 0;
+        const balls = card?.balls ?? 0;
+        const strikeRate = balls ? ((runs / balls) * 100).toFixed(2) : '-';
         return (
-          <div
-            key={b.id}
-            className={`grid grid-cols-[1fr_44px_44px_36px_36px_56px] gap-3 items-baseline py-4 border-b border-hairline last:border-b-0 ${
-              isOnStrike ? 'relative' : ''
-            }`}
-          >
-            <div className="min-w-0 flex items-baseline gap-2">
-              {isOnStrike && (
-                <span className="text-accent text-[9px]" aria-label="on strike">●</span>
-              )}
-              <span className={`font-medium text-[15px] truncate ${isOnStrike ? 'text-ink' : 'text-ink-soft'}`}>
-                {b.name}
-              </span>
-            </div>
-            <span className="num-md text-right">{card?.runs ?? 0}</span>
-            <span className="num-sm text-right">{card?.balls ?? 0}</span>
-            <span className="num-sm text-right">{card?.fours ?? 0}</span>
-            <span className="num-sm text-right">{card?.sixes ?? 0}</span>
-            <span className="num-sm text-right">{sr}</span>
+          <div key={b.id} className={`flex h-10 items-center gap-2 border-b border-[var(--border-subtle)] last:border-b-0 ${onStrike ? 'border-l-[3px] border-l-[var(--striker)] pl-2' : 'pl-[11px]'}`}>
+            <span className="w-4 text-[10px] font-bold text-[var(--green-text)]">{onStrike ? '*' : ''}</span>
+            <span className={`min-w-0 flex-1 truncate text-[14px] ${onStrike ? 'font-bold text-[var(--text-primary)]' : 'font-semibold text-[var(--text-secondary)]'}`}>{b.name}</span>
+            <span className="w-12 text-right text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">{runs}{onStrike ? '*' : ''}</span>
+            <span className="w-10 text-right text-[12px] tabular-nums text-[var(--text-secondary)]">{balls}b</span>
+            <span className="w-14 text-right text-[12px] tabular-nums text-[var(--text-muted)]">{strikeRate}</span>
           </div>
         );
       })}

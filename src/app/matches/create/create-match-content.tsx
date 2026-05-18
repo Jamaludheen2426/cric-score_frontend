@@ -2,17 +2,31 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useTeams, useCreateMatch } from '@/lib/queries';
-import { PageLoader } from '@/components/PageLoader';
+import { Check, Minus, Plus } from 'lucide-react';
+import { useCreateMatch, useTeams } from '@/lib/queries';
 import { generatePin } from '@/lib/utils';
-import { RefreshCw, Copy, Check } from 'lucide-react';
-import Link from 'next/link';
+import { PageLoader } from '@/components/PageLoader';
+
+type Step = 1 | 2 | 3;
+
+function initials(name?: string) {
+  return (name || 'T').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+}
+
+function SettingRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex min-h-12 items-center justify-between gap-3 border-b border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2 last:border-b-0">
+      <span className="text-[13px] font-semibold text-[var(--text-primary)]">{label}</span>
+      <div className="min-w-[90px] text-right">{children}</div>
+    </div>
+  );
+}
 
 export function CreateMatchContent() {
   const router = useRouter();
   const { data: teams, isLoading } = useTeams();
   const createMatch = useCreateMatch();
-
+  const [step, setStep] = useState<Step>(1);
   const [form, setForm] = useState({
     title: '',
     team_a_id: '',
@@ -23,146 +37,97 @@ export function CreateMatchContent() {
     wide_rule: 'normal' as 'normal' | 'strict',
     scorer_pin: generatePin(),
   });
-  const [pinCopied, setPinCopied] = useState(false);
 
   const set = (k: string, v: any) => setForm(prev => ({ ...prev, [k]: v }));
+  const teamA = teams?.find((t: any) => String(t.id) === form.team_a_id);
+  const teamB = teams?.find((t: any) => String(t.id) === form.team_b_id);
+  const canContinueTeams = form.team_a_id && form.team_b_id && form.team_a_id !== form.team_b_id;
 
-  const copyPin = () => {
-    navigator.clipboard.writeText(form.scorer_pin);
-    setPinCopied(true);
-    setTimeout(() => setPinCopied(false), 1800);
-  };
-
-  const handleSubmit = async () => {
-    if (!form.title || !form.team_a_id || !form.team_b_id) return alert('Please fill all required fields');
-    if (form.team_a_id === form.team_b_id) return alert('Teams must be different');
-
+  const submit = async () => {
     const match = await createMatch.mutateAsync({
       ...form,
+      title: form.title || `${teamA?.name || 'Team A'} vs ${teamB?.name || 'Team B'}`,
       team_a_id: Number(form.team_a_id),
       team_b_id: Number(form.team_b_id),
       death_overs_from: form.death_overs_from ? Number(form.death_overs_from) : undefined,
     });
-
     router.push(`/matches/${match.id}/score`);
   };
 
   if (isLoading) return <PageLoader label="Loading teams" />;
 
   return (
-    <div className="form-page">
-      <div className="form-grid">
-        <aside className="form-aside">
-          <Link href="/matches" className="text-[13px] text-ink-mute hover:text-ink mb-8 inline-block">
-            ← Back to matches
-          </Link>
-          <p className="eyebrow mb-4">New match</p>
-          <h1 className="text-title mb-5">
-            Set up your <span className="font-normal text-ink-soft">fixture.</span>
-          </h1>
-          <p className="text-[15px] text-ink-soft leading-relaxed">
-            Name the match, pick the sides, set the conditions of play.
-            A scorer key is generated for the desk.
-          </p>
-        </aside>
+    <div className="min-h-screen bg-[var(--bg-app)] pb-5">
+      <div className="page">
+        <div className="mb-3 text-[12px] font-semibold text-[var(--text-secondary)]">Step {step} of 3</div>
 
-        <div className="space-y-12">
+        {step === 1 && (
           <section>
-            <header className="mb-6">
-              <h2 className="text-h3 mb-1">Match details</h2>
-              <p className="text-[14px] text-ink-soft">Title and the two sides.</p>
-            </header>
-            <div className="space-y-5">
-              <div>
-                <label className="label">Match title</label>
-                <input className="input" value={form.title} onChange={e => set('title', e.target.value)}
-                  placeholder="e.g. Final — Season 2026" />
-              </div>
-              <div className="grid sm:grid-cols-[1fr_auto_1fr] items-end gap-4">
-                <div>
-                  <label className="label">Team A</label>
-                  <select className="input" value={form.team_a_id} onChange={e => set('team_a_id', e.target.value)}>
-                    <option value="">Select…</option>
-                    {teams?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
+            <p className="eyebrow mb-2">Select teams</p>
+            <div className="grid gap-2">
+              {(['team_a_id', 'team_b_id'] as const).map((key, idx) => {
+                const selected = key === 'team_a_id' ? teamA : teamB;
+                return (
+                  <div key={key} className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-3">
+                    <label className="label">{idx === 0 ? 'Team A' : 'Team B'}</label>
+                    <select className="input" value={form[key]} onChange={e => set(key, e.target.value)}>
+                      <option value="">Tap to select team</option>
+                      {teams?.map((t: any) => <option key={t.id} value={t.id}>{t.name} - {t.players?.length || 0} players</option>)}
+                    </select>
+                    {selected && (
+                      <div className="mt-2 flex items-center gap-2 text-[13px] text-[var(--text-secondary)]">
+                        <span className="grid h-8 w-8 place-items-center rounded-full bg-[var(--bg-elevated)] text-[11px] font-bold">{initials(selected.name)}</span>
+                        <span>{selected.name} - {selected.players?.length || 0} players</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <button disabled={!canContinueTeams} onClick={() => setStep(2)} className="btn btn-primary mt-3 w-full">Next</button>
+          </section>
+        )}
+
+        {step === 2 && (
+          <section>
+            <p className="eyebrow mb-2">Match settings</p>
+            <div className="overflow-hidden rounded-lg border border-[var(--border-subtle)]">
+              <SettingRow label="Match title"><input className="input h-9" value={form.title} onChange={e => set('title', e.target.value)} placeholder="Qualifier 1" /></SettingRow>
+              <SettingRow label="Overs"><input className="input h-9 w-16 text-right" type="number" min={1} max={50} value={form.total_overs} onChange={e => set('total_overs', Number(e.target.value))} /></SettingRow>
+              <SettingRow label="Players per side">
+                <div className="inline-flex items-center gap-2">
+                  <button className="grid h-8 w-8 place-items-center rounded border border-[var(--border)]" onClick={() => set('players_per_side', Math.max(1, form.players_per_side - 1))}><Minus size={14} /></button>
+                  <span className="w-6 text-center text-[13px] font-bold">{form.players_per_side}</span>
+                  <button className="grid h-8 w-8 place-items-center rounded border border-[var(--border)]" onClick={() => set('players_per_side', Math.min(11, form.players_per_side + 1))}><Plus size={14} /></button>
                 </div>
-                <div className="text-ink-mute text-xl pb-3 text-center hidden sm:block">vs</div>
-                <div>
-                  <label className="label">Team B</label>
-                  <select className="input" value={form.team_b_id} onChange={e => set('team_b_id', e.target.value)}>
-                    <option value="">Select…</option>
-                    {teams?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
-                </div>
-              </div>
+              </SettingRow>
+              <SettingRow label="Strict wide rule"><button onClick={() => set('wide_rule', form.wide_rule === 'normal' ? 'strict' : 'normal')} className={`h-7 w-12 rounded-full border ${form.wide_rule === 'strict' ? 'border-[var(--green)] bg-[#0f2318]' : 'border-[var(--border)] bg-[var(--bg-input)]'}`}><span className={`block h-5 w-5 rounded-full bg-[var(--text-secondary)] transition-transform ${form.wide_rule === 'strict' ? 'translate-x-5 bg-[var(--green-text)]' : 'translate-x-1'}`} /></button></SettingRow>
+              <SettingRow label="Death overs from"><input className="input h-9 w-16 text-right" type="number" min={1} value={form.death_overs_from} onChange={e => set('death_overs_from', e.target.value)} placeholder="-" /></SettingRow>
+              <SettingRow label="Scorer PIN"><input className="input h-9 w-24 text-center text-[18px] font-bold tracking-[.25em]" maxLength={4} inputMode="numeric" value={form.scorer_pin} onChange={e => set('scorer_pin', e.target.value.replace(/\D/g, '').slice(0, 4))} /></SettingRow>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button onClick={() => setStep(1)} className="btn btn-secondary">Back</button>
+              <button onClick={() => setStep(3)} className="btn btn-primary">Review</button>
             </div>
           </section>
+        )}
 
-          <div className="hr" />
-
+        {step === 3 && (
           <section>
-            <header className="mb-6">
-              <h2 className="text-h3 mb-1">Conditions of play</h2>
-              <p className="text-[14px] text-ink-soft">Overs, squad size, the death rule.</p>
-            </header>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <label className="label">Total overs</label>
-                <input className="input-mono text-center text-xl" type="number" min={1} max={50}
-                  value={form.total_overs} onChange={e => set('total_overs', Number(e.target.value))} />
-              </div>
-              <div>
-                <label className="label">Per side</label>
-                <input className="input-mono text-center text-xl" type="number" min={1} max={11}
-                  value={form.players_per_side} onChange={e => set('players_per_side', Number(e.target.value))} />
-              </div>
-              <div>
-                <label className="label">Death from</label>
-                <input className="input-mono text-center text-xl" type="number" min={1}
-                  value={form.death_overs_from} onChange={e => set('death_overs_from', e.target.value)} placeholder="—" />
-              </div>
-              <div>
-                <label className="label">Wide rule</label>
-                <select className="input" value={form.wide_rule} onChange={e => set('wide_rule', e.target.value as any)}>
-                  <option value="normal">Normal</option>
-                  <option value="strict">Strict (T20)</option>
-                </select>
-              </div>
+            <p className="eyebrow mb-2">Review</p>
+            <div className="overflow-hidden rounded-lg border border-[var(--border-subtle)]">
+              <SettingRow label="Teams"><span className="text-[13px] text-[var(--text-secondary)]">{teamA?.name} vs {teamB?.name}</span></SettingRow>
+              <SettingRow label="Overs"><span className="text-[13px] font-bold">{form.total_overs}</span></SettingRow>
+              <SettingRow label="Players"><span className="text-[13px] font-bold">{form.players_per_side}</span></SettingRow>
+              <SettingRow label="Wide rule"><span className="text-[13px] font-bold capitalize">{form.wide_rule}</span></SettingRow>
+              <SettingRow label="PIN"><span className="text-[13px] font-bold">{form.scorer_pin}</span></SettingRow>
+            </div>
+            <div className="mt-3 grid grid-cols-[90px_1fr] gap-2">
+              <button onClick={() => setStep(2)} className="btn btn-secondary">Back</button>
+              <button onClick={submit} disabled={createMatch.isPending} className="btn btn-primary h-12">{createMatch.isPending ? 'Creating' : <><Check size={16} /> Create match</>}</button>
             </div>
           </section>
-
-          <div className="hr" />
-
-          <section>
-            <header className="mb-6">
-              <h2 className="text-h3 mb-1">Scorer key</h2>
-              <p className="text-[14px] text-ink-soft">Share with the scorer. The desk asks for this on entry.</p>
-            </header>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1">
-                <input
-                  className="input-mono text-center text-3xl tracking-[0.55em] py-5 text-accent"
-                  value={form.scorer_pin}
-                  onChange={e => set('scorer_pin', e.target.value)}
-                  maxLength={6}
-                />
-              </div>
-              <button onClick={() => set('scorer_pin', generatePin())} className="btn-secondary">
-                <RefreshCw size={15} /> Regenerate
-              </button>
-              <button onClick={copyPin} className="btn-secondary">
-                {pinCopied ? <><Check size={15} /> Copied</> : <><Copy size={15} /> Copy</>}
-              </button>
-            </div>
-          </section>
-
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-8 border-t border-hairline">
-            <Link href="/matches" className="btn-ghost">Cancel</Link>
-            <button onClick={handleSubmit} disabled={createMatch.isPending} className="btn-primary btn-lg">
-              {createMatch.isPending ? 'Creating…' : 'Create match →'}
-            </button>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

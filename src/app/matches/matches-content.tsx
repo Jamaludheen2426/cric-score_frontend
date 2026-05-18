@@ -1,124 +1,124 @@
 'use client';
 
 import Link from 'next/link';
-import { useMatches } from '@/lib/queries';
+import { useState } from 'react';
+import { Filter, Plus } from 'lucide-react';
+import { useLiveScore, useMatches } from '@/lib/queries';
 import { PageLoader } from '@/components/PageLoader';
-import { Match } from '@/types';
+import { Innings, Match } from '@/types';
+import { formatOvers } from '@/lib/utils';
 
-function MatchRow({ match, idx }: { match: Match; idx: number }) {
-  const isLive      = match.status === 'live';
-  const isPending   = match.status === 'pending';
-  const isCompleted = match.status === 'completed';
+type Tab = 'live' | 'pending' | 'completed';
 
-  const targetHref =
-    isLive      ? `/matches/${match.id}/live` :
-    isCompleted ? `/matches/${match.id}/summary` :
-                  `/matches/${match.id}/score`;
+function initials(name?: string) {
+  return (name || 'T').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+}
 
+function hashColorClass(name?: string) {
+  const colors = ['bg-[#1f6feb]', 'bg-[#238636]', 'bg-[#bb8009]', 'bg-[#8957e5]', 'bg-[#da3633]', 'bg-[#d4820a]'];
+  const sum = (name || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  return colors[sum % colors.length];
+}
+
+function TeamMark({ name }: { name?: string }) {
   return (
-    <article
-      className="group rise"
-      style={{ animationDelay: `${Math.min(idx * 50, 400)}ms` }}
-    >
-      <Link
-        href={targetHref}
-        className="block py-7 border-t border-hairline last:border-b hover:bg-surface-soft/40 transition-colors -mx-4 px-4 rounded-md"
-      >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-[11px] font-mono text-ink-mute">#{String(match.id).padStart(3, '0')}</span>
-              {isLive      && <span className="badge-live"><span className="live-dot" /> Live</span>}
-              {isPending   && <span className="badge-pending">Upcoming</span>}
-              {isCompleted && <span className="badge-completed">Completed</span>}
-            </div>
-
-            <h3 className="text-h2 mb-2 group-hover:text-accent transition-colors">
-              {match.title}
-            </h3>
-
-            <div className="flex items-baseline gap-2.5 text-[15px] text-ink-soft">
-              <span className="text-ink">{match.teamA?.name || 'Team A'}</span>
-              <span className="text-ink-mute">vs</span>
-              <span className="text-ink">{match.teamB?.name || 'Team B'}</span>
-            </div>
-          </div>
-
-          <div className="flex gap-10 md:gap-12">
-            <div className="stat">
-              <span className="stat-label">Overs</span>
-              <span className="stat-value">{match.total_overs}</span>
-            </div>
-            <div className="stat">
-              <span className="stat-label">Per side</span>
-              <span className="stat-value">{match.players_per_side}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-[14px] font-medium text-ink-soft group-hover:text-accent transition-colors">
-              {isLive ? 'Watch live' : isPending ? 'Open desk' : 'View card'}
-            </span>
-            <span className="text-ink-mute group-hover:text-accent group-hover:translate-x-0.5 transition-all">→</span>
-          </div>
-        </div>
-      </Link>
-    </article>
+    <div className="flex min-w-0 items-center gap-2">
+      <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-[11px] font-bold text-white ${hashColorClass(name)}`}>
+        {initials(name)}
+      </span>
+      <span className="truncate text-[14px] font-bold text-[var(--text-primary)]">{name || 'Team'}</span>
+    </div>
   );
 }
 
-function Section({ title, count, children }: { title: string; count: number; children: React.ReactNode }) {
-  if (count === 0) return null;
+function inningsForTeam(innings: Innings[] | undefined, teamId?: number) {
+  return innings?.find(inn => inn.batting_team_id === teamId);
+}
+
+function scoreText(innings?: Innings) {
+  if (!innings) return 'Yet to bat';
+  return `${innings.total_runs}/${innings.total_wickets} (${formatOvers(innings.total_overs_bowled)} ov)`;
+}
+
+function MatchCard({ match }: { match: Match }) {
+  const { data: liveData } = useLiveScore(match.share_token);
+  const teamAInnings = inningsForTeam(liveData?.innings, match.team_a_id);
+  const teamBInnings = inningsForTeam(liveData?.innings, match.team_b_id);
+  const href = match.status === 'completed'
+    ? `/matches/${match.id}/summary`
+    : match.status === 'live'
+      ? `/matches/${match.id}/live`
+      : `/matches/${match.id}/score`;
+
   return (
-    <section className="mb-16 last:mb-0">
-      <header className="flex items-baseline justify-between mb-2">
-        <h2 className="text-h3">{title}</h2>
-        <span className="text-[13px] text-ink-mute">{count}</span>
-      </header>
-      <div>{children}</div>
-    </section>
+    <Link href={href} className="block rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)]">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 p-3">
+        <TeamMark name={match.teamA?.name} />
+        <span className="text-[11px] font-bold uppercase text-[var(--text-muted)]">vs</span>
+        <div className="min-w-0 justify-self-end"><TeamMark name={match.teamB?.name} /></div>
+      </div>
+      <div className="grid grid-cols-2 gap-2 px-3 pb-3">
+        <div className="text-[15px] font-bold text-[var(--text-primary)]">{scoreText(teamAInnings)}</div>
+        <div className="text-right text-[15px] font-bold text-[var(--text-primary)]">{scoreText(teamBInnings)}</div>
+      </div>
+      <div className={`border-t px-3 py-2 text-[11px] font-bold uppercase ${
+        match.status === 'live'
+          ? 'border-[var(--green)] bg-[#0f2318] text-[var(--green-text)]'
+          : 'border-[var(--border-subtle)] text-[var(--text-muted)]'
+      }`}>
+        {match.status === 'live' ? <><span className="live-dot mr-2 align-middle" />LIVE</> : match.status === 'completed' ? 'Completed' : `Upcoming · ${match.total_overs} ov`}
+      </div>
+    </Link>
   );
 }
 
 export function MatchesContent() {
   const { data: matches, isLoading } = useMatches();
+  const [tab, setTab] = useState<Tab>('live');
 
   if (isLoading) return <PageLoader label="Loading matches" />;
 
-  const live      = (matches || []).filter((m: Match) => m.status === 'live');
-  const pending   = (matches || []).filter((m: Match) => m.status === 'pending');
-  const completed = (matches || []).filter((m: Match) => m.status === 'completed');
+  const list = matches || [];
+  const tabs: Array<{ key: Tab; label: string; items: Match[] }> = [
+    { key: 'live', label: 'Live', items: list.filter((m: Match) => m.status === 'live') },
+    { key: 'pending', label: 'Upcoming', items: list.filter((m: Match) => m.status === 'pending') },
+    { key: 'completed', label: 'Completed', items: list.filter((m: Match) => m.status === 'completed') },
+  ];
+  const active = tabs.find(t => t.key === tab)!;
 
   return (
-    <div className="page">
-      {/* Page header */}
-      <header className="flex flex-wrap items-end justify-between gap-6 mb-16">
-        <div>
-          <p className="eyebrow mb-4">Matches</p>
-          <h1 className="text-title">
-            All your <span className="font-normal text-ink-soft">fixtures.</span>
-          </h1>
+    <div className="min-h-screen bg-[var(--bg-app)] pb-20">
+      <div className="page">
+        <header className="mb-3 flex h-10 items-center justify-between">
+          <h1 className="text-[20px] font-bold text-[var(--text-primary)]">Matches</h1>
+          <button className="grid h-9 w-9 place-items-center rounded-md border border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-secondary)]">
+            <Filter size={16} />
+          </button>
+        </header>
+        <div className="tabbar mb-3">
+          {tabs.map(t => (
+            <button key={t.key} onClick={() => setTab(t.key)} className={`tab-button ${tab === t.key ? 'tab-button-active' : ''}`}>
+              {t.label}
+            </button>
+          ))}
         </div>
-        <Link href="/matches/create" className="btn-primary">
-          New match
-        </Link>
-      </header>
-
-      {!matches?.length && (
-        <div className="card text-center py-20">
-          <p className="text-h3 mb-3">No matches yet.</p>
-          <p className="text-ink-soft mb-8 max-w-md mx-auto">
-            Set up your first fixture in a minute — pick the teams, set the overs, share the public link.
-          </p>
-          <Link href="/matches/create" className="btn-primary btn-lg">
-            Start your first match
-          </Link>
-        </div>
-      )}
-
-      <Section title="Live now"    count={live.length}>     {live.map((m: Match, i: number) => <MatchRow key={m.id} match={m} idx={i} />)}</Section>
-      <Section title="Upcoming"    count={pending.length}>  {pending.map((m: Match, i: number) => <MatchRow key={m.id} match={m} idx={i} />)}</Section>
-      <Section title="Completed"   count={completed.length}>{completed.map((m: Match, i: number) => <MatchRow key={m.id} match={m} idx={i} />)}</Section>
+        {active.items.length ? (
+          <div className="grid gap-2">
+            {active.items.map((match) => <MatchCard key={match.id} match={match} />)}
+          </div>
+        ) : (
+          <div className="grid min-h-[320px] place-items-center text-center">
+            <div>
+              <div className="mx-auto mb-3 grid h-10 w-10 place-items-center rounded-full border border-[var(--border)] text-[var(--text-muted)]">B</div>
+              <p className="text-[14px] font-semibold text-[var(--text-secondary)]">No matches</p>
+              <p className="mt-1 text-[12px] text-[var(--text-muted)]">Matches will appear here.</p>
+            </div>
+          </div>
+        )}
+      </div>
+      <Link href="/matches/create" className="fixed bottom-5 right-5 grid h-[52px] w-[52px] place-items-center rounded-full bg-[var(--green)] text-white">
+        <Plus size={24} />
+      </Link>
     </div>
   );
 }

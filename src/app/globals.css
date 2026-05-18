@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,216 +6,120 @@
 
 @layer base {
   :root {
-    --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --bg-app: #0d1117;
+    --bg-card: #161b22;
+    --bg-elevated: #21262d;
+    --bg-input: #0d1117;
+    --border: #30363d;
+    --border-subtle: #21262d;
+    --green: #238636;
+    --green-bright: #2ea043;
+    --green-text: #3fb950;
+    --orange: #d4820a;
+    --orange-text: #e3b341;
+    --red: #da3633;
+    --red-text: #f85149;
+    --blue: #1f6feb;
+    --blue-text: #58a6ff;
+    --gold: #bb8009;
+    --gold-text: #d29922;
+    --purple-text: #bc8cff;
+    --text-primary: #e6edf3;
+    --text-secondary: #8b949e;
+    --text-muted: #484f58;
+    --text-link: #58a6ff;
+    --live-dot: #3fb950;
+    --striker: #2ea043;
+    --font-sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 
   * { box-sizing: border-box; }
-
-  html {
-    background-color: #FAFAF8;
-    color-scheme: light;
-  }
-
+  html { background: var(--bg-app); color-scheme: dark; }
   body {
-    font-family: var(--font-sans);
-    font-feature-settings: 'cv11', 'ss01', 'liga';
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-    background-color: #FAFAF8;
-    color: #181816;
     min-height: 100vh;
-    line-height: 1.55;
-    font-weight: 400;
-    letter-spacing: -0.005em;
-  }
-
-  h1, h2, h3, h4 {
+    margin: 0;
+    background: var(--bg-app);
+    color: var(--text-primary);
     font-family: var(--font-sans);
-    font-weight: 600;
-    letter-spacing: -0.022em;
-    color: #181816;
+    font-feature-settings: "tnum";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
-
-  ::-webkit-scrollbar       { width: 10px; height: 10px; }
-  ::-webkit-scrollbar-track { background: #FAFAF8; }
-  ::-webkit-scrollbar-thumb { background: #D9D9D2; border: 2px solid #FAFAF8; border-radius: 999px; }
-  ::-webkit-scrollbar-thumb:hover { background: #B3B3AE; }
-
-  ::selection {
-    background: rgba(217,83,28,0.18);
-    color: #181816;
-  }
+  button, input, select, textarea { font: inherit; }
+  ::selection { background: var(--green); color: #fff; }
 }
 
 @layer components {
-  /* ── Containers ─────────────────────────────────── */
-  .page         { @apply max-w-[1200px] mx-auto px-6 sm:px-10 py-16 sm:py-20; }
-  .page-narrow  { @apply max-w-[760px]  mx-auto px-6 sm:px-10 py-16 sm:py-20; }
-  .page-wide    { @apply max-w-[1320px] mx-auto px-6 sm:px-10 py-12; }
+  .page { @apply mx-auto w-full max-w-[960px] px-3 py-3 sm:px-4; }
+  .page-wide { @apply mx-auto w-full max-w-[1120px] px-3 sm:px-4; }
+  .page-narrow { @apply mx-auto w-full max-w-[420px] px-4 py-8; }
+  .app-shell { background: var(--bg-app); color: var(--text-primary); min-height: 100vh; }
 
-  .form-page    { @apply max-w-[1200px] mx-auto px-6 sm:px-10 py-16 sm:py-20; }
-  .form-grid    { @apply grid lg:grid-cols-[340px_1fr] gap-12 lg:gap-20; }
-  .form-aside   { @apply lg:sticky lg:top-24 lg:self-start; }
+  .card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px; }
+  .card-soft, .card-tight { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px; }
+  .section-line { border-bottom: 1px solid var(--border-subtle); }
 
-  /* ── Labels ─────────────────────────────────────── */
-  .eyebrow {
-    @apply text-[12px] font-medium uppercase text-ink-mute;
-    letter-spacing: 0.08em;
+  .eyebrow { font-size: 11px; line-height: 1; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); }
+  .label { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+  .input, .input-mono {
+    width: 100%;
+    height: 40px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    padding: 0 10px;
+    font-size: 13px;
+    outline: none;
   }
+  .input:focus, .input-mono:focus { border-color: var(--green-bright); }
+  .input::placeholder { color: var(--text-muted); }
 
-  /* ── Surfaces ───────────────────────────────────── */
-  .card {
-    @apply bg-surface border border-hairline rounded-2xl p-8;
-  }
-  .card-soft {
-    @apply bg-surface-soft border border-hairline rounded-2xl p-8;
-  }
-  .card-tight {
-    @apply bg-surface border border-hairline rounded-xl p-5;
-  }
-
-  /* ── Buttons — flat, simple, weighty ────────────── */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 font-medium text-[14px]
-           px-4 py-2.5 rounded-lg transition-all duration-150 select-none cursor-pointer
-           disabled:opacity-40 disabled:cursor-not-allowed border border-transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px;
+    border-radius: 6px;
+    padding: 0 12px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    transition: border-color .15s, background .15s, color .15s;
   }
-  .btn-primary   { @apply btn bg-ink text-paper hover:bg-[#000]; }
-  .btn-accent    { @apply btn bg-accent text-white hover:bg-accent-strong; }
-  .btn-secondary { @apply btn bg-surface text-ink border-hairline-strong hover:border-ink; }
-  .btn-ghost     { @apply btn bg-transparent text-ink-soft hover:text-ink hover:bg-surface-soft; }
-  .btn-danger    { @apply btn bg-wicket text-white hover:bg-[#9A3232]; }
-  .btn-lg        { @apply px-6 py-3 text-[15px]; }
-  .btn-sm        { @apply px-3 py-1.5 text-[13px]; }
+  .btn-primary, .btn-accent { background: var(--green); border-color: var(--green); color: #fff; }
+  .btn-primary:hover, .btn-accent:hover { background: var(--green-bright); border-color: var(--green-bright); }
+  .btn-secondary { background: var(--bg-elevated); color: var(--text-primary); }
+  .btn-ghost { background: transparent; border-color: transparent; color: var(--text-secondary); }
+  .btn-danger { background: #3d0f0f; border-color: var(--red); color: var(--red-text); }
+  .btn-sm { height: 32px; padding: 0 10px; font-size: 12px; }
+  .btn-lg { height: 44px; padding: 0 14px; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
 
-  /* ── Form ───────────────────────────────────────── */
-  .input {
-    @apply w-full bg-surface text-ink border border-hairline-strong rounded-lg
-           px-3.5 py-2.5 text-[14px] placeholder:text-ink-faint
-           focus:outline-none focus:border-ink focus:shadow-focus
-           transition-all;
-  }
-  .input-mono { @apply input font-mono tracking-wide; }
-  .label      { @apply block mb-1.5 text-[13px] font-medium text-ink-soft; }
+  .score-number { font-size: 32px; line-height: 1; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .score-over { font-size: 13px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .table-head { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); }
+  .table-cell { padding: 8px 10px; font-size: 13px; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 
-  /* ── Badges ─────────────────────────────────────── */
-  .badge {
-    @apply inline-flex items-center gap-1.5 text-[12px] font-medium
-           px-2 py-0.5 rounded-full border;
-  }
-  .badge-live      { @apply badge bg-accent-soft text-accent border-accent/20; }
-  .badge-pending   { @apply badge bg-surface-soft text-ink-soft border-hairline-strong; }
-  .badge-completed { @apply badge bg-pitch-soft text-pitch border-pitch/20; }
+  .tabbar { display: flex; background: var(--bg-card); border-bottom: 1px solid var(--border); }
+  .tab-button { flex: 1; height: 42px; border-bottom: 2px solid transparent; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+  .tab-button-active { color: var(--text-primary); border-bottom-color: var(--green-bright); }
 
-  .live-dot {
-    @apply inline-block w-1.5 h-1.5 rounded-full bg-accent animate-pulse-dot;
-  }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live-dot); animation: live-pulse 1.5s ease-in-out infinite; display: inline-block; }
+  @keyframes live-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
 
-  /* ── Score numerals — refined, not display-heavy ── */
-  .num-mega {
-    font-family: var(--font-sans);
-    font-weight: 600;
-    font-size: clamp(60px, 9vw, 128px);
-    line-height: 0.95;
-    letter-spacing: -0.04em;
-    font-feature-settings: 'tnum';
-    color: #181816;
-  }
-  .num-xl {
-    font-family: var(--font-sans);
-    font-weight: 600;
-    font-size: clamp(32px, 4vw, 48px);
-    line-height: 1;
-    letter-spacing: -0.025em;
-    font-feature-settings: 'tnum';
-  }
-  .num-lg {
-    font-family: var(--font-sans);
-    font-weight: 500;
-    font-size: 24px;
-    line-height: 1;
-    letter-spacing: -0.015em;
-    font-feature-settings: 'tnum';
-  }
-  .num-md { font-family: var(--font-mono); font-weight: 500; font-size: 15px; font-feature-settings: 'tnum'; color: #181816; }
-  .num-sm { font-family: var(--font-mono); font-weight: 400; font-size: 13px; font-feature-settings: 'tnum'; color: #5B5B57; }
+  .pellet { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 28px; border-radius: 999px; border: 1px solid transparent; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .pellet-dot { background: var(--bg-elevated); color: var(--text-secondary); }
+  .pellet-run { background: #1a2a1a; color: var(--green-text); }
+  .pellet-four, .pellet-six { background: #2a2200; color: var(--gold-text); }
+  .pellet-wide { min-width: 34px; padding: 0 8px; background: #0d1f3c; color: var(--blue-text); font-size: 10px; }
+  .pellet-nb { min-width: 34px; padding: 0 8px; background: #2a1a00; color: var(--orange-text); font-size: 10px; }
+  .pellet-wicket { background: #3d0f0f; color: var(--red-text); }
+  .pellet-empty { background: var(--bg-card); border: 1px dashed var(--border); color: var(--text-muted); }
 
-  /* ── Stat ───────────────────────────────────────── */
-  .stat { @apply flex flex-col gap-1.5; }
-  .stat-label { @apply eyebrow; }
-  .stat-value {
-    font-family: var(--font-sans);
-    font-weight: 600;
-    font-size: 22px;
-    line-height: 1;
-    letter-spacing: -0.012em;
-    color: #181816;
-    font-feature-settings: 'tnum';
-  }
-
-  /* ── Type scale shortcuts ───────────────────────── */
-  .text-hero {
-    font-size: clamp(44px, 6vw, 72px);
-    line-height: 1.05;
-    letter-spacing: -0.032em;
-    font-weight: 600;
-    color: #181816;
-  }
-  .text-title {
-    font-size: clamp(28px, 3.5vw, 40px);
-    line-height: 1.12;
-    letter-spacing: -0.025em;
-    font-weight: 600;
-    color: #181816;
-  }
-  .text-h2 {
-    font-size: 22px;
-    line-height: 1.25;
-    letter-spacing: -0.018em;
-    font-weight: 600;
-  }
-  .text-h3 {
-    font-size: 16px;
-    line-height: 1.3;
-    letter-spacing: -0.01em;
-    font-weight: 600;
-  }
-  .text-lead {
-    font-size: 16px;
-    line-height: 1.6;
-    color: #5B5B57;
-  }
-
-  /* ── Divider ────────────────────────────────────── */
-  .hr        { @apply h-px w-full bg-hairline; }
-  .hr-strong { @apply h-px w-full bg-hairline-strong; }
-
-  /* ── Ball pellets ───────────────────────────────── */
-  .pellet {
-    @apply relative inline-flex items-center justify-center font-mono font-medium text-[12px]
-           w-9 h-9 rounded-full border transition-colors;
-  }
-  .pellet-dot    { @apply bg-surface border-hairline-strong text-ink-faint; }
-  .pellet-run    { @apply bg-surface border-hairline-strong text-ink; }
-  .pellet-four   { @apply bg-pitch-soft border-pitch/30 text-pitch; }
-  .pellet-six    { @apply bg-accent text-white border-accent; }
-  .pellet-wide   { @apply bg-surface-soft border-ink-faint text-ink-soft; }
-  .pellet-nb     { @apply bg-surface-soft border-ink-faint text-ink-soft; }
-  .pellet-wicket { @apply bg-wicket text-white border-wicket; }
-
-  /* ── Reveal helpers ─────────────────────────────── */
-  .rise    { animation: rise 600ms cubic-bezier(0.16, 1, 0.3, 1) both; }
-  .rise-d1 { animation-delay: 50ms; }
-  .rise-d2 { animation-delay: 100ms; }
-  .rise-d3 { animation-delay: 150ms; }
-  .rise-d4 { animation-delay: 200ms; }
-
-  /* ── Toast for errors ───────────────────────────── */
-  .toast {
-    @apply fixed bottom-6 right-6 z-[60] max-w-md bg-surface border border-wicket/30
-           rounded-xl shadow-lift p-4 flex items-start gap-3;
-    animation: rise 300ms ease-out;
-  }
+  .badge-live { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--green-text); text-transform: uppercase; }
+  .badge-pending, .badge-completed { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; }
 }

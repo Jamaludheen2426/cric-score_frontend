@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -25,7 +25,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
   const [showBowlerModal, setShowBowlerModal] = useState(false);
   const [showWicketModal, setShowWicketModal] = useState(false);
   const [showEndInningsModal, setShowEndInningsModal] = useState(false);
-  const [pendingBallRuns, setPendingBallRuns] = useState<number>(0);
+  const [pendingBall, setPendingBall] = useState<any | null>(null);
   const [liveData, setLiveData] = useState<LiveScore | null>(null);
 
   const { data: match, isLoading } = useMatch(matchId);
@@ -57,17 +57,24 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
   const battingTeamPlayers = currentInnings
     ? (currentInnings.batting_team_id === match.team_a_id ? match.teamA : match.teamB)?.players || []
     : [];
+  const effectiveBatters = currentInnings
+    ? Math.max(1, Math.min(match.players_per_side, battingTeamPlayers.length || match.players_per_side))
+    : match.players_per_side;
+  const inningsHasNoPair = !!currentInnings && currentInnings.total_wickets >= effectiveBatters - 1;
+
+  const willCompleteOver = (ball: any) =>
+    (currentOver?.legal_balls || 0) + (!ball.is_wide && !ball.is_noball ? 1 : 0) >= 6;
 
   const handleBall = (data: any) => {
     if (data.is_wicket) {
-      setPendingBallRuns(data.runs || 0);
+      setPendingBall(data);
       setShowWicketModal(true);
     } else {
       addBall.mutate(data, {
         onSuccess: (res: any) => {
-          // Innings/match closed — no new bowler needed
+          // Innings/match closed, no new bowler needed.
           if (res?.allOut || res?.oversFinished || res?.targetReached) return;
-          if ((currentOver?.legal_balls || 0) + 1 >= 6 && !data.is_wide && !data.is_noball) {
+          if (willCompleteOver(data)) {
             setShowBowlerModal(true);
           }
         },
@@ -77,44 +84,37 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
 
   const handleWicketConfirm = (wicketData: any) => {
     setShowWicketModal(false);
-    addBall.mutate({ ...wicketData, runs: pendingBallRuns }, {
+    const ball = { ...(pendingBall || { runs: 0 }), ...wicketData };
+    addBall.mutate(ball, {
       onSuccess: (res: any) => {
         if (res?.allOut || res?.oversFinished || res?.targetReached) return;
-        if ((currentOver?.legal_balls || 0) + 1 >= 6) setShowBowlerModal(true);
+        if (willCompleteOver(ball)) setShowBowlerModal(true);
       },
+      onSettled: () => setPendingBall(null),
     });
   };
 
   return (
-    <div className="page">
+    <div className="min-h-screen bg-[var(--bg-app)] pb-40">
       {/* Match header */}
-      <header className="flex flex-wrap items-end justify-between gap-6 mb-12 pb-8 border-b border-hairline">
+      <header className="flex h-12 items-center justify-between border-b border-[var(--border)] bg-[var(--bg-card)] px-3">
         <div>
-          <div className="flex items-center gap-3 mb-3">
-            <p className="eyebrow">Scoring desk</p>
-            <span className="text-[12px] text-ink-mute font-mono">#{String(match.id).padStart(3, '0')}</span>
-            {isDeath && currentInnings && <span className="badge-pending">Death overs</span>}
-          </div>
-          <h1 className="text-title mb-3">{match.title}</h1>
-          <div className="flex items-baseline gap-2.5 text-[15px] text-ink-soft">
-            <span className="text-ink">{match.teamA?.name}</span>
-            <span className="text-ink-mute">vs</span>
-            <span className="text-ink">{match.teamB?.name}</span>
-          </div>
+          <p className="truncate text-[14px] font-bold text-[var(--text-primary)]">{match.title}</p>
+          <p className="text-[11px] text-[var(--text-secondary)]">{match.teamA?.name} vs {match.teamB?.name}</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
           {match.status === 'pending' && (
-            <button onClick={() => setShowStartModal(true)} className="btn-primary">Open play</button>
+            <button onClick={() => setShowStartModal(true)} className="btn btn-primary btn-sm">Open play</button>
           )}
           {match.status === 'live' && currentInnings && (
-            <button onClick={() => setShowEndInningsModal(true)} className="btn-secondary btn-sm">
+            <button onClick={() => setShowEndInningsModal(true)} className="btn btn-secondary btn-sm">
               End innings
             </button>
           )}
           {match.share_token && (
-            <Link href={`/matches/${match.id}/live`} target="_blank" className="btn-secondary btn-sm">
-              Public ↗
+            <Link href={`/matches/${match.id}/live`} target="_blank" className="btn btn-secondary btn-sm">
+              Public
             </Link>
           )}
         </div>
@@ -122,14 +122,12 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
 
       {/* PENDING */}
       {match.status === 'pending' && (
-        <section className="card text-center py-20 rise">
-          <p className="eyebrow mb-4">Awaiting toss</p>
-          <h2 className="text-h2 mb-3">First ball not yet bowled.</h2>
-          <p className="text-ink-soft mb-8 max-w-md mx-auto">
-            Settle the toss and the openers — the scoring desk opens immediately after.
-          </p>
-          <button onClick={() => setShowStartModal(true)} className="btn-primary btn-lg">
-            Open play →
+        <section className="m-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3">
+          <p className="eyebrow mb-2">Awaiting toss</p>
+          <h2 className="text-[16px] font-bold">First ball not yet bowled</h2>
+          <p className="mt-1 text-[13px] text-[var(--text-secondary)]">Set the toss, openers, and opening bowler.</p>
+          <button onClick={() => setShowStartModal(true)} className="btn btn-primary mt-3 w-full">
+            Open play
           </button>
         </section>
       )}
@@ -141,7 +139,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
 
       {/* ACTIVE SCORING */}
       {(match.status === 'live' || liveData) && currentInnings && liveData && (
-        <div className="space-y-6">
+        <div>
           <ScoreHeader liveData={liveData} match={match} />
 
           {currentOver && (
@@ -150,10 +148,11 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
               overNumber={currentOver.over_number}
               legalBalls={currentOver.legal_balls}
               totalOvers={match.total_overs}
+              deathOversFrom={match.death_overs_from}
             />
           )}
 
-          <div className="grid lg:grid-cols-2 gap-6">
+          <div className="overflow-y-auto">
             <BatsmenTable innings={currentInnings} />
             {currentInnings.currentBowler && currentOver && (
               <BowlerStats
@@ -164,32 +163,33 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
             )}
           </div>
 
-          {!isOverComplete ? (
-            <div className="space-y-3">
+          {inningsHasNoPair ? (
+            <section className="m-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3">
+              <p className="eyebrow mb-2 text-[var(--red-text)]">All out</p>
+              <h3 className="text-[16px] font-bold">Innings should close now</h3>
+              <p className="mb-3 mt-1 text-[13px] text-[var(--text-secondary)]">There are not enough not-out batters left to continue scoring.</p>
+              {liveData.innings.length < 2 ? (
+                <button onClick={() => setShowEndInningsModal(true)} className="btn btn-primary w-full">Open next innings</button>
+              ) : (
+                <button onClick={() => endMatch.mutate()} disabled={endMatch.isPending} className="btn btn-primary w-full">End match</button>
+              )}
+            </section>
+          ) : !isOverComplete ? (
+            <>
               <BallInputPanel
                 onBall={handleBall}
+                onUndo={() => { if (confirm('Undo the last ball?')) undoBall.mutate(); }}
                 disabled={addBall.isPending}
                 isLoading={addBall.isPending}
+                canUndo={(currentOver?.legal_balls ?? 0) > 0 || (liveData?.currentOverBalls?.length ?? 0) > 0}
               />
-              {((currentOver?.legal_balls ?? 0) > 0 || (liveData?.currentOverBalls?.length ?? 0) > 0) && (
-                <div className="flex justify-end">
-                  <button
-                    onClick={() => { if (confirm('Undo the last ball?')) undoBall.mutate(); }}
-                    disabled={undoBall.isPending}
-                    className="btn-ghost btn-sm text-wicket hover:text-wicket hover:bg-wicket-soft"
-                  >
-                    {undoBall.isPending ? 'Undoing…' : '← Undo last ball'}
-                  </button>
-                </div>
-              )}
-            </div>
+            </>
           ) : (
-            <section className="card-soft text-center py-12">
-              <p className="eyebrow mb-3">Over complete</p>
-              <h3 className="text-h2 mb-2">Change of bowler.</h3>
-              <p className="text-ink-soft mb-6">Pick the next at the mark to keep play moving.</p>
-              <button onClick={() => setShowBowlerModal(true)} className="btn-primary">
-                Select bowler →
+            <section className="m-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3">
+              <p className="eyebrow mb-2">Over complete</p>
+              <h3 className="text-[16px] font-bold">Change of bowler</h3>
+              <button onClick={() => setShowBowlerModal(true)} className="btn btn-primary mt-3 w-full">
+                Select bowler
               </button>
             </section>
           )}
@@ -208,23 +208,23 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
        liveData?.innings?.[liveData.innings.length - 1]?.status === 'completed' && (
         <div className="space-y-6">
           <ScoreHeader liveData={liveData} match={match} />
-          <section className="card text-center py-16">
+          <section className="m-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3">
             <p className="eyebrow mb-3">Innings closed</p>
             <h2 className="text-h2 mb-3">
               {(liveData?.innings?.length ?? 0) < 2 ? 'Time for the chase.' : 'Both teams have batted.'}
             </h2>
-            <p className="text-ink-soft mb-8 max-w-md mx-auto">
+            <p className="mb-3 mt-1 max-w-md text-[13px] text-[var(--text-secondary)]">
               {(liveData?.innings?.length ?? 0) < 2
                 ? 'Set up the openers for the second innings.'
                 : 'Close the match to file the official scorecard.'}
             </p>
             {(liveData?.innings?.length ?? 0) < 2 ? (
-              <button onClick={() => setShowEndInningsModal(true)} className="btn-primary btn-lg">
-                Open 2nd innings →
+              <button onClick={() => setShowEndInningsModal(true)} className="btn btn-primary w-full">
+                Open 2nd innings
               </button>
             ) : (
-              <button onClick={() => endMatch.mutate()} disabled={endMatch.isPending} className="btn-primary btn-lg">
-                {endMatch.isPending ? 'Filing…' : 'End match →'}
+              <button onClick={() => endMatch.mutate()} disabled={endMatch.isPending} className="btn btn-primary w-full">
+                {endMatch.isPending ? 'Filing' : 'End match'}
               </button>
             )}
           </section>
@@ -233,12 +233,12 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
 
       {/* COMPLETED */}
       {match.status === 'completed' && (
-        <section className="card text-center py-16">
-          <p className="eyebrow mb-3 text-pitch">Filed</p>
-          <h2 className="text-h2 mb-3">Match closed.</h2>
-          <p className="text-ink-soft mb-8">The card is in the archive.</p>
-          <Link href={`/matches/${matchId}/summary`} className="btn-primary btn-lg">
-            View scorecard →
+        <section className="m-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3">
+          <p className="eyebrow mb-2 text-[var(--green-text)]">Filed</p>
+          <h2 className="text-[16px] font-bold">Match closed</h2>
+          <p className="mb-3 mt-1 text-[13px] text-[var(--text-secondary)]">The card is in the archive.</p>
+          <Link href={`/matches/${matchId}/summary`} className="btn btn-primary w-full">
+            View scorecard
           </Link>
         </section>
       )}
@@ -265,6 +265,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
         <WicketModal
           batsmen={[currentInnings?.batsman1, currentInnings?.batsman2].filter(Boolean)}
           fielders={bowlingTeamPlayers}
+          isNoBall={!!pendingBall?.is_noball}
           newBatsmenPool={battingTeamPlayers.filter(
             (p: Player) =>
               p.id !== currentInnings?.current_batsman1_id &&
@@ -289,3 +290,6 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
     </div>
   );
 }
+
+
+

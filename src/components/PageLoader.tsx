@@ -1,10 +1,12 @@
 export function PageLoader({ label = 'Loading' }: { label?: string }) {
   return (
-    <div className="page flex flex-col items-center justify-center min-h-[50vh] gap-5">
-      <div className="relative w-20 h-px overflow-hidden bg-hairline">
-        <div className="absolute inset-y-0 left-0 w-1/2 bg-ink animate-sweep" />
+    <div className="grid min-h-[50vh] place-items-center bg-[var(--bg-app)] px-4">
+      <div className="text-center">
+        <div className="mx-auto mb-3 h-1 w-24 overflow-hidden rounded-full bg-[var(--border-subtle)]">
+          <div className="h-full w-1/2 animate-sweep bg-[var(--green)]" />
+        </div>
+        <p className="text-[13px] text-[var(--text-muted)]">{label}</p>
       </div>
-      <p className="text-[13px] text-ink-mute">{label}</p>
     </div>
   );
 }

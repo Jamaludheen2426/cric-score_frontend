@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useTeam, useCreatePlayer, useDeletePlayer } from '@/lib/queries';
+import Link from 'next/link';
+import { Plus, Trash2 } from 'lucide-react';
+import { useCreatePlayer, useDeletePlayer, useTeam } from '@/lib/queries';
 import { PageLoader } from '@/components/PageLoader';
 import { Player } from '@/types';
-import { Plus, Trash2 } from 'lucide-react';
-import Link from 'next/link';
 
 const ROLE_LABELS: Record<string, string> = {
   batsman: 'Batsman',
@@ -37,82 +37,69 @@ export function TeamDetailContent({ teamId }: { teamId: number }) {
   };
 
   return (
-    <div className="form-page">
-      <div className="form-grid">
-        <aside className="form-aside">
-          <Link href="/teams" className="text-[13px] text-ink-mute hover:text-ink mb-8 inline-block">
-            ← Back to teams
-          </Link>
-          <p className="eyebrow mb-4">Team · {String(team.id).padStart(2, '0')}</p>
-          <h1 className="text-title mb-5">{team.name}</h1>
-          <div className="flex items-baseline gap-3 pb-6 border-b border-hairline mb-5">
-            <span className="num-xl text-ink">{team.players?.length || 0}</span>
-            <span className="text-[14px] text-ink-soft">
-              {(team.players?.length || 0) === 1 ? 'player' : 'players'} on roster
-            </span>
-          </div>
-          <p className="text-[14px] text-ink-soft leading-relaxed">
-            Add, edit, or remove players. This roster is used whenever this side is picked for a match.
-          </p>
-        </aside>
+    <div className="min-h-screen bg-[var(--bg-app)]">
+      <header className="flex h-12 items-center justify-between border-b border-[var(--border)] bg-[var(--bg-card)] px-3">
+        <Link href="/teams" className="text-[13px] font-semibold text-[var(--blue-text)]">Back</Link>
+        <div className="min-w-0 text-center">
+          <h1 className="truncate text-[15px] font-bold text-[var(--text-primary)]">{team.name}</h1>
+          <p className="text-[11px] text-[var(--text-secondary)]">{team.players?.length || 0} players</p>
+        </div>
+        <button onClick={() => setShowAdd(!showAdd)} className="btn btn-secondary h-8 px-3">
+          <Plus size={14} /> Player
+        </button>
+      </header>
 
-        <section>
-          <header className="flex items-end justify-between mb-6">
-            <h2 className="text-h3">Roster</h2>
-            <button onClick={() => setShowAdd(!showAdd)} className="btn-secondary btn-sm">
-              <Plus size={14} /> {showAdd ? 'Cancel' : 'Add player'}
-            </button>
-          </header>
-
-          {showAdd && (
-            <div className="flex flex-col sm:flex-row gap-2 mb-6 p-2 bg-surface border border-accent/40 rounded-md">
+      <main className="mx-auto max-w-3xl">
+        {showAdd && (
+          <section className="border-b border-[var(--border)] bg-[var(--bg-card)] p-3">
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--text-muted)]">Add Player</p>
+            <div className="grid gap-2 sm:grid-cols-[1fr_180px_92px]">
               <input
-                className="input border-0 bg-transparent flex-1 focus:shadow-none"
+                className="rounded-md border border-[var(--border)] bg-[var(--bg-input)] px-3 py-2 text-[13px] text-[var(--text-primary)] outline-none focus:border-[var(--green)]"
                 placeholder="Player name"
                 value={newName}
                 onChange={e => setNewName(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleAddPlayer()}
                 autoFocus
               />
-              <select className="input border-0 bg-transparent w-full sm:w-44 shrink-0 focus:shadow-none"
-                value={newRole} onChange={e => setNewRole(e.target.value)}>
+              <select
+                className="rounded-md border border-[var(--border)] bg-[var(--bg-input)] px-3 py-2 text-[13px] text-[var(--text-primary)] outline-none focus:border-[var(--green)]"
+                value={newRole}
+                onChange={e => setNewRole(e.target.value)}
+              >
                 <option value="batsman">Batsman</option>
                 <option value="bowler">Bowler</option>
                 <option value="allrounder">All-rounder</option>
                 <option value="wicketkeeper">Wicketkeeper</option>
               </select>
-              <button onClick={handleAddPlayer} disabled={createPlayer.isPending} className="btn-accent btn-sm">
+              <button onClick={handleAddPlayer} disabled={createPlayer.isPending} className="btn btn-primary">
                 Add
               </button>
             </div>
-          )}
+          </section>
+        )}
 
+        <section className="border-x border-[var(--border-subtle)]">
           {team.players?.length ? (
-            <div className="border border-hairline rounded-xl bg-surface overflow-hidden">
-              {team.players.map((player: Player, i: number) => (
-                <div
-                  key={player.id}
-                  className={`grid grid-cols-[40px_1fr_auto_auto] items-center gap-4 px-5 py-4 group hover:bg-surface-soft transition-colors ${
-                    i < team.players!.length - 1 ? 'border-b border-hairline' : ''
-                  }`}
+            team.players.map((player: Player, i: number) => (
+              <div key={player.id} className="grid grid-cols-[34px_1fr_auto_34px] items-center gap-2 border-b border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2.5">
+                <span className="text-center font-mono text-[12px] text-[var(--text-muted)]">{String(i + 1).padStart(2, '0')}</span>
+                <span className="min-w-0 truncate text-[14px] font-semibold text-[var(--text-primary)]">{player.name}</span>
+                <span className="text-[12px] text-[var(--text-secondary)]">{ROLE_LABELS[player.role || 'batsman']}</span>
+                <button
+                  onClick={() => deletePlayer.mutate({ teamId, playerId: player.id })}
+                  className="grid h-8 w-8 place-items-center rounded-md text-[var(--text-muted)] hover:bg-[var(--bg-elevated)] hover:text-[var(--red-text)]"
+                  aria-label="Delete player"
                 >
-                  <span className="font-mono text-[12px] text-ink-mute text-center">{String(i + 1).padStart(2, '0')}</span>
-                  <span className="font-medium text-[15px] text-ink">{player.name}</span>
-                  <span className="text-[12px] text-ink-soft">{ROLE_LABELS[player.role || 'batsman']}</span>
-                  <button
-                    onClick={() => deletePlayer.mutate({ teamId, playerId: player.id })}
-                    className="p-1.5 text-ink-mute hover:text-wicket opacity-0 group-hover:opacity-100 transition-all"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              ))}
-            </div>
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))
           ) : (
-            <p className="text-center py-12 text-ink-mute">No players on the roster yet.</p>
+            <p className="py-12 text-center text-[13px] text-[var(--text-muted)]">No players on the roster yet.</p>
           )}
         </section>
-      </div>
+      </main>
     </div>
   );
 }

@@ -2,44 +2,45 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { CalendarDays, Plus, Trophy, Users } from 'lucide-react';
 
 const links = [
-  { href: '/matches', label: 'Matches' },
-  { href: '/teams',   label: 'Teams' },
+  { href: '/matches', label: 'Matches', icon: CalendarDays },
+  { href: '/teams', label: 'Teams', icon: Users },
 ];
 
 export function Nav() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 bg-paper/85 backdrop-blur-md border-b border-hairline">
-      <div className="page-wide flex items-center justify-between h-16">
-        <Link href="/" className="font-medium text-[16px] tracking-tight">
-          Cricket <span className="text-ink-soft">Scorer</span>
+    <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--bg-card)]">
+      <div className="page-wide flex h-12 items-center justify-between gap-3">
+        <Link href="/matches" className="flex items-center gap-2">
+          <span className="grid h-8 w-8 place-items-center rounded-md bg-[var(--green)] text-white">
+            <Trophy size={16} />
+          </span>
+          <span className="text-[15px] font-bold text-[var(--text-primary)]">Cricket Scorer</span>
         </Link>
-
         <nav className="flex items-center gap-1">
-          {links.map(l => {
-            const active = pathname.startsWith(l.href);
+          {links.map(({ href, label, icon: Icon }) => {
+            const active = pathname.startsWith(href);
             return (
               <Link
-                key={l.href}
-                href={l.href}
-                className={`relative px-3 py-2 text-[14px] font-medium transition-colors ${
-                  active ? 'text-ink' : 'text-ink-soft hover:text-ink'
+                key={href}
+                href={href}
+                className={`flex h-9 items-center gap-2 px-3 text-[13px] font-semibold ${
+                  active ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'
                 }`}
               >
-                {l.label}
-                {active && (
-                  <span className="absolute left-3 right-3 -bottom-[1px] h-[2px] bg-ink animate-sweep" />
-                )}
+                <Icon size={14} />
+                <span className="hidden sm:inline">{label}</span>
               </Link>
             );
           })}
-          <Link href="/matches/create" className="btn-primary ml-3 btn-sm">
-            New match
-          </Link>
         </nav>
+        <Link href="/matches/create" className="btn btn-primary btn-sm">
+          <Plus size={14} /> Match
+        </Link>
       </div>
     </header>
   );

@@ -91,6 +91,7 @@ export function useScoringActions(token: string, matchId: number) {
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['matches', matchId] });
     qc.invalidateQueries({ queryKey: ['live'] });
+    qc.invalidateQueries({ queryKey: ['summary'] });
   };
 
   const startMatch = useMutation({ mutationFn: (data: any) => api.start(matchId, data), onSuccess: invalidate });

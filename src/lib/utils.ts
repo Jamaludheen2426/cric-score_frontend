@@ -12,7 +12,10 @@ export function formatRate(rate: number): string {
 
 export function getBallLabel(ball: BallRecord): string {
   if (ball.is_wicket) return 'W';
-  if (ball.is_wide) return `Wd${ball.runs > 0 ? `+${ball.runs}` : ''}`;
+  if (ball.is_wide) {
+    const extraRuns = Math.max(0, ball.extras - 1);
+    return `Wd${extraRuns > 0 ? `+${extraRuns}` : ''}`;
+  }
   if (ball.is_noball) return `Nb${ball.runs > 0 ? `+${ball.runs}` : ''}`;
   return String(ball.runs);
 }
