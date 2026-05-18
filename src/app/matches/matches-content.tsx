@@ -44,31 +44,48 @@ function MatchCard({ match }: { match: Match }) {
   const { data: liveData } = useLiveScore(match.share_token);
   const teamAInnings = inningsForTeam(liveData?.innings, match.team_a_id);
   const teamBInnings = inningsForTeam(liveData?.innings, match.team_b_id);
-  const href = match.status === 'completed'
+  const mainHref = match.status === 'completed'
     ? `/matches/${match.id}/summary`
     : match.status === 'live'
       ? `/matches/${match.id}/live`
       : `/matches/${match.id}/score`;
+  const canScore = match.status !== 'completed';
 
   return (
-    <Link href={href} className="block rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)]">
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 p-3">
-        <TeamMark name={match.teamA?.name} />
-        <span className="text-[11px] font-bold uppercase text-[var(--text-muted)]">vs</span>
-        <div className="min-w-0 justify-self-end"><TeamMark name={match.teamB?.name} /></div>
-      </div>
-      <div className="grid grid-cols-2 gap-2 px-3 pb-3">
-        <div className="text-[15px] font-bold text-[var(--text-primary)]">{scoreText(teamAInnings)}</div>
-        <div className="text-right text-[15px] font-bold text-[var(--text-primary)]">{scoreText(teamBInnings)}</div>
-      </div>
+    <article className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)]">
+      <Link href={mainHref} className="block">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 p-3">
+          <TeamMark name={match.teamA?.name} />
+          <span className="text-[11px] font-bold uppercase text-[var(--text-muted)]">vs</span>
+          <div className="min-w-0 justify-self-end"><TeamMark name={match.teamB?.name} /></div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 px-3 pb-3">
+          <div className="text-[15px] font-bold text-[var(--text-primary)]">{scoreText(teamAInnings)}</div>
+          <div className="text-right text-[15px] font-bold text-[var(--text-primary)]">{scoreText(teamBInnings)}</div>
+        </div>
+      </Link>
       <div className={`border-t px-3 py-2 text-[11px] font-bold uppercase ${
         match.status === 'live'
           ? 'border-[var(--green)] bg-[#0f2318] text-[var(--green-text)]'
           : 'border-[var(--border-subtle)] text-[var(--text-muted)]'
       }`}>
-        {match.status === 'live' ? <><span className="live-dot mr-2 align-middle" />LIVE</> : match.status === 'completed' ? 'Completed' : `Upcoming · ${match.total_overs} ov`}
+        <div className="flex items-center justify-between gap-2">
+          <span>{match.status === 'live' ? <><span className="live-dot mr-2 align-middle" />LIVE</> : match.status === 'completed' ? 'Completed' : `Upcoming · ${match.total_overs} ov`}</span>
+          <span className="flex items-center gap-2">
+            {match.status === 'live' && (
+              <Link href={`/matches/${match.id}/live`} className="rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-2 py-1 text-[11px] text-[var(--blue-text)]">
+                View
+              </Link>
+            )}
+            {canScore && (
+              <Link href={`/matches/${match.id}/score`} className="rounded border border-[var(--green)] bg-[var(--green)] px-2 py-1 text-[11px] text-white">
+                Score
+              </Link>
+            )}
+          </span>
+        </div>
       </div>
-    </Link>
+    </article>
   );
 }
 

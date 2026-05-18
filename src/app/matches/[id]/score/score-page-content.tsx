@@ -1,6 +1,6 @@
-﻿'use client';
+'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useMatch, useScoringActions, useLiveScore } from '@/lib/queries';
 import { PageLoader } from '@/components/PageLoader';
@@ -13,7 +13,6 @@ import { BatsmenTable } from '@/components/scoring/BatsmenTable';
 import { BowlerStats } from '@/components/scoring/BowlerStats';
 import { BowlerSelectModal } from '@/components/scoring/BowlerSelectModal';
 import { WicketModal } from '@/components/scoring/WicketModal';
-import { EndMatchControls } from '@/components/scoring/EndMatchControls';
 import { EndInningsModal } from '@/components/scoring/EndInningsModal';
 import { LiveScore, Player } from '@/types';
 
@@ -21,6 +20,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 export function ScorePageContent({ matchId }: { matchId: number }) {
   const [token, setToken] = useState<string | null>(null);
+  const [streamConnected, setStreamConnected] = useState(true);
   const [showStartModal, setShowStartModal] = useState(false);
   const [showBowlerModal, setShowBowlerModal] = useState(false);
   const [showWicketModal, setShowWicketModal] = useState(false);
@@ -31,13 +31,33 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
   const { data: match, isLoading } = useMatch(matchId);
   const { data: initialLiveScore, refetch: refetchLiveScore, isFetching: isLiveFetching } = useLiveScore(match?.share_token || '');
 
-  useEffect(() => { if (initialLiveScore) setLiveData(initialLiveScore); }, [initialLiveScore]);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const saved = window.sessionStorage.getItem(`scorer-token:${matchId}`);
+    if (saved) setToken(saved);
+  }, [matchId]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const key = `scorer-token:${matchId}`;
+    if (token) {
+      window.sessionStorage.setItem(key, token);
+    } else {
+      window.sessionStorage.removeItem(key);
+    }
+  }, [matchId, token]);
+
+  useEffect(() => {
+    if (initialLiveScore) setLiveData(initialLiveScore);
+  }, [initialLiveScore]);
 
   useEffect(() => {
     if (!match?.share_token) return;
     const url = `${API_URL.replace('/api', '')}/api/matches/events/${match.share_token}`;
     const es = new EventSource(url);
+    es.onopen = () => setStreamConnected(true);
     es.onmessage = (e) => { try { setLiveData(JSON.parse(e.data)); } catch (_) {} };
+    es.onerror = () => setStreamConnected(false);
     return () => es.close();
   }, [match?.share_token]);
 
@@ -49,7 +69,6 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
 
   const currentInnings = liveData?.innings?.find(i => i.status === 'live');
   const currentOver = liveData?.currentOver;
-  const isDeath = !!match.death_overs_from && (currentOver?.over_number || 0) >= match.death_overs_from;
   const isOverComplete = (currentOver?.legal_balls || 0) >= 6;
   const bowlingTeamPlayers = currentInnings
     ? (currentInnings.bowling_team_id === match.team_a_id ? match.teamA : match.teamB)?.players || []
@@ -74,18 +93,16 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
     if (data.is_wicket) {
       setPendingBall(data);
       setShowWicketModal(true);
-    } else {
-      addBall.mutate(data, {
-        onSuccess: async (res: any) => {
-          await refreshLiveScore();
-          // Innings/match closed, no new bowler needed.
-          if (res?.allOut || res?.oversFinished || res?.targetReached) return;
-          if (willCompleteOver(data)) {
-            setShowBowlerModal(true);
-          }
-        },
-      });
+      return;
     }
+
+    addBall.mutate(data, {
+      onSuccess: async (res: any) => {
+        await refreshLiveScore();
+        if (res?.allOut || res?.oversFinished || res?.targetReached) return;
+        if (willCompleteOver(data)) setShowBowlerModal(true);
+      },
+    });
   };
 
   const handleWicketConfirm = (wicketData: any) => {
@@ -103,7 +120,6 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
 
   return (
     <div className="min-h-screen bg-[var(--bg-app)] pb-40">
-      {/* Match header */}
       <header className="flex h-12 items-center justify-between border-b border-[var(--border)] bg-[var(--bg-card)] px-3">
         <div>
           <p className="truncate text-[14px] font-bold text-[var(--text-primary)]">{match.title}</p>
@@ -127,7 +143,6 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
         </div>
       </header>
 
-      {/* PENDING */}
       {match.status === 'pending' && (
         <section className="m-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3">
           <p className="eyebrow mb-2">Awaiting toss</p>
@@ -139,19 +154,23 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
         </section>
       )}
 
-      {/* LOADING */}
       {match.status === 'live' && (!liveData || ((liveData?.innings?.length ?? 0) === 0)) && (
         <PageLoader label="Tuning the signal" />
       )}
 
-      {/* ACTIVE SCORING */}
       {(match.status === 'live' || liveData) && currentInnings && liveData && (
         <div>
-          {(addBall.isPending || isLiveFetching) && (
+          {!streamConnected && (
+            <div className="sticky top-0 z-40 border-b border-[var(--orange)] bg-[#2a1a00] px-3 py-1.5 text-center text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--orange-text)]">
+              Live stream reconnecting
+            </div>
+          )}
+          {(addBall.isPending || undoBall.isPending || isLiveFetching) && (
             <div className="sticky top-0 z-40 border-b border-[var(--green)] bg-[#0f2318] px-3 py-1.5 text-center text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--green-text)]">
               Updating score
             </div>
           )}
+
           <ScoreHeader liveData={liveData} match={match} />
 
           {currentOver && (
@@ -187,19 +206,17 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
               )}
             </section>
           ) : !isOverComplete ? (
-            <>
-              <BallInputPanel
-                onBall={handleBall}
-                onUndo={() => {
-                  if (confirm('Undo the last ball?')) {
-                    undoBall.mutate(undefined, { onSuccess: refreshLiveScore });
-                  }
-                }}
-                disabled={addBall.isPending || undoBall.isPending || isLiveFetching}
-                isLoading={addBall.isPending || undoBall.isPending || isLiveFetching}
-                canUndo={(currentOver?.legal_balls ?? 0) > 0 || (liveData?.currentOverBalls?.length ?? 0) > 0}
-              />
-            </>
+            <BallInputPanel
+              onBall={handleBall}
+              onUndo={() => {
+                if (confirm('Undo the last ball?')) {
+                  undoBall.mutate(undefined, { onSuccess: refreshLiveScore });
+                }
+              }}
+              disabled={addBall.isPending || undoBall.isPending || isLiveFetching}
+              isLoading={addBall.isPending || undoBall.isPending || isLiveFetching}
+              canUndo={(currentOver?.legal_balls ?? 0) > 0 || (liveData?.currentOverBalls?.length ?? 0) > 0}
+            />
           ) : (
             <section className="m-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3">
               <p className="eyebrow mb-2">Over complete</p>
@@ -209,16 +226,9 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
               </button>
             </section>
           )}
-
-          <EndMatchControls
-            matchStatus={match.status}
-            onEndMatch={() => endMatch.mutate()}
-            isLoading={endMatch.isPending}
-          />
         </div>
       )}
 
-      {/* INNINGS CLOSED */}
       {match.status === 'live' && liveData && !currentInnings &&
        (liveData?.innings?.length ?? 0) > 0 &&
        liveData?.innings?.[liveData.innings.length - 1]?.status === 'completed' && (
@@ -247,7 +257,6 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
         </div>
       )}
 
-      {/* COMPLETED */}
       {match.status === 'completed' && (
         <section className="m-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3">
           <p className="eyebrow mb-2 text-[var(--green-text)]">Filed</p>
@@ -259,7 +268,6 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
         </section>
       )}
 
-      {/* Modals */}
       {showStartModal && (
         <StartMatchModal
           match={match}
@@ -280,7 +288,6 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
       {showWicketModal && (
         <WicketModal
           batsmen={[currentInnings?.batsman1, currentInnings?.batsman2].filter(Boolean)}
-          fielders={bowlingTeamPlayers}
           isNoBall={!!pendingBall?.is_noball}
           newBatsmenPool={battingTeamPlayers.filter(
             (p: Player) =>
@@ -306,6 +313,3 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
     </div>
   );
 }
-
-
-

@@ -16,7 +16,6 @@ const WICKET_TYPES: { value: WicketType; label: string }[] = [
 
 interface Props {
   batsmen: (Player | undefined)[];
-  fielders: Player[];
   newBatsmenPool: Player[];
   isNoBall?: boolean;
   onConfirm: (data: any) => void;
@@ -25,17 +24,14 @@ interface Props {
 
 const NO_BALL_WICKET_TYPES: WicketType[] = ['run_out', 'obstructing_field', 'retired'];
 
-export function WicketModal({ batsmen, fielders, newBatsmenPool, isNoBall, onConfirm, onClose }: Props) {
+export function WicketModal({ batsmen, newBatsmenPool, isNoBall, onConfirm, onClose }: Props) {
   const [wicketType, setWicketType] = useState<WicketType>('bowled');
   const [dismissedId, setDismissedId] = useState<number>(batsmen[0]?.id || 0);
-  const [fielderId, setFielderId] = useState('');
   const [newBatsmanId, setNewBatsmanId] = useState('');
 
   useEffect(() => {
     if (isNoBall && !NO_BALL_WICKET_TYPES.includes(wicketType)) setWicketType('run_out');
   }, [isNoBall, wicketType]);
-
-  const needsFielder = ['caught', 'run_out', 'stumped'].includes(wicketType);
 
   return (
     <div className="fixed inset-0 z-[70] grid place-items-center bg-black/85 p-4">
@@ -53,12 +49,6 @@ export function WicketModal({ batsmen, fielders, newBatsmenPool, isNoBall, onCon
               return <button key={wt.value} disabled={disabled} onClick={() => setWicketType(wt.value)} className={`h-10 rounded border text-[13px] font-semibold ${active ? 'border-[var(--red)] bg-[#3d0f0f] text-[var(--red-text)]' : disabled ? 'border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-muted)]' : 'border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-primary)]'}`}>{wt.label}</button>;
             })}
           </div>
-          {needsFielder && (
-            <select className="input" value={fielderId} onChange={e => setFielderId(e.target.value)}>
-              <option value="">Select fielder</option>
-              {fielders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-            </select>
-          )}
           <select className="input" value={dismissedId} onChange={e => setDismissedId(Number(e.target.value))}>
             {batsmen.filter(Boolean).map(b => <option key={b!.id} value={b!.id}>{b!.name}</option>)}
           </select>
@@ -70,7 +60,6 @@ export function WicketModal({ batsmen, fielders, newBatsmenPool, isNoBall, onCon
           )}
           <button onClick={() => {
             if (newBatsmenPool.length > 0 && !newBatsmanId) return alert('Select next batsman');
-            if (needsFielder && !fielderId) return alert('Select fielder');
             onConfirm({ is_wicket: true, wicket_type: wicketType, dismissed_player_id: dismissedId, new_batsman_id: newBatsmanId ? Number(newBatsmanId) : undefined });
           }} className="btn btn-danger h-11 w-full">Wicket confirmed</button>
         </div>

@@ -10,7 +10,7 @@ interface Props {
   canUndo?: boolean;
 }
 
-type Extra = 'normal' | 'wide' | 'noball' | 'bye' | 'legbye';
+type Extra = 'normal' | 'wide' | 'noball';
 const RUNS = [0, 1, 2, 3, 4, 6];
 
 export function BallInputPanel({ onBall, onUndo, disabled, isLoading, canUndo }: Props) {
@@ -23,7 +23,6 @@ export function BallInputPanel({ onBall, onUndo, disabled, isLoading, canUndo }:
       is_wide: extra === 'wide',
       is_noball: extra === 'noball',
       is_wicket: isWicket,
-      extras: extra === 'bye' || extra === 'legbye' ? runs : undefined,
     });
     setRuns(0);
     setExtra('normal');
@@ -46,8 +45,6 @@ export function BallInputPanel({ onBall, onUndo, disabled, isLoading, canUndo }:
           {[
             ['wide', 'Wide', 'border-[var(--blue)] bg-[#0d1f3c] text-[var(--blue-text)]'],
             ['noball', 'No Ball', 'border-[var(--orange)] bg-[#2a1a00] text-[var(--orange-text)]'],
-            ['bye', 'Bye', 'border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-secondary)]'],
-            ['legbye', 'Leg Bye', 'border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-secondary)]'],
           ].map(([key, label, cls]) => (
             <button key={key} disabled={disabled} onClick={() => setExtra(extra === key ? 'normal' : key as Extra)} className={`h-9 flex-1 rounded-md border text-[12px] font-bold uppercase ${extra === key ? cls : 'border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-secondary)]'}`}>{label}</button>
           ))}

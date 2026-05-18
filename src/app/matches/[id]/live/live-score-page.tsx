@@ -46,6 +46,9 @@ export function LiveScorePage({ matchId }: { matchId: number }) {
         </div>
         <div className="flex items-center gap-2">
           <Link href="/matches" className="btn btn-secondary h-8 px-3">Matches</Link>
+          {match.status !== 'completed' && (
+            <Link href={`/matches/${match.id}/score`} className="btn btn-primary h-8 px-3">Scorer</Link>
+          )}
           <button onClick={copyShareLink} className="btn btn-secondary h-8 px-3">
             {copied ? 'Copied' : 'Share'}
           </button>
