@@ -1,73 +1,53 @@
 import Link from 'next/link';
+import { CalendarDays, Plus, Users } from 'lucide-react';
 
 export default function Home() {
   return (
-    <div className="page">
-      {/* HERO — restrained, centered-left, generous whitespace */}
-      <section className="pt-12 pb-28 max-w-[920px] rise">
-        <p className="eyebrow mb-6">a quiet scoring desk</p>
+    <div className="min-h-screen bg-[var(--bg-app)]">
+      <header className="flex h-12 items-center justify-between border-b border-[var(--border)] bg-[var(--bg-card)] px-3">
+        <div>
+          <h1 className="text-[16px] font-bold text-[var(--text-primary)]">Cricket Scorer</h1>
+          <p className="text-[11px] text-[var(--text-secondary)]">Ball-by-ball scoring desk</p>
+        </div>
+        <Link href="/matches/create" className="btn btn-primary h-8 px-3">
+          <Plus size={14} /> Match
+        </Link>
+      </header>
 
-        <h1 className="text-hero mb-8">
-          A calmer way to keep
-          <br />
-          <span className="font-normal text-ink-soft">the scorebook.</span>
-        </h1>
+      <main className="mx-auto max-w-3xl">
+        <section className="border-b border-[var(--border-subtle)] px-3 py-3">
+          <p className="text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--text-muted)]">Open</p>
+        </section>
 
-        <p className="text-lead text-ink-soft max-w-[640px] mb-10">
-          Ball-by-ball cricket scoring with a public, real-time scorecard.
-          Built for clarity — quick to enter, easier to follow.
-        </p>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <Link href="/matches" className="btn-primary btn-lg">
-            Go to matches
+        <div className="divide-y divide-[var(--border-subtle)] bg-[var(--bg-card)]">
+          <Link href="/matches" className="flex items-center gap-3 px-3 py-4 hover:bg-[var(--bg-elevated)]">
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-[#0d1f3c] text-[var(--blue-text)]">
+              <CalendarDays size={17} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14px] font-bold text-[var(--text-primary)]">Matches</span>
+              <span className="text-[12px] text-[var(--text-secondary)]">Live, upcoming, and completed cards</span>
+            </span>
+            <span className="text-[18px] text-[var(--text-muted)]">›</span>
           </Link>
-          <Link href="/matches/create" className="btn-secondary btn-lg">
-            Start a new match
+
+          <Link href="/teams" className="flex items-center gap-3 px-3 py-4 hover:bg-[var(--bg-elevated)]">
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-[#0f2318] text-[var(--green-text)]">
+              <Users size={17} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14px] font-bold text-[var(--text-primary)]">Teams</span>
+              <span className="text-[12px] text-[var(--text-secondary)]">Manage squads and player roles</span>
+            </span>
+            <span className="text-[18px] text-[var(--text-muted)]">›</span>
           </Link>
         </div>
-      </section>
 
-      <div className="hr" />
-
-      {/* FEATURE GRID — generous, restrained, content-led */}
-      <section className="py-24 grid md:grid-cols-3 gap-x-12 gap-y-16 rise rise-d1">
-        {[
-          {
-            n: '01',
-            t: 'Real-time, no polling',
-            d: 'Server-Sent Events push every delivery the moment it’s entered. Viewers see the ball as it’s scored.',
-          },
-          {
-            n: '02',
-            t: 'PIN-gated scoring',
-            d: 'A short key protects the scoring desk. Public viewers stay public — only the scorer touches the data.',
-          },
-          {
-            n: '03',
-            t: 'Cricket rules, encoded',
-            d: 'Strike rotation, wide and no-ball handling, all-out detection, target chases — they’re part of the engine.',
-          },
-        ].map((f) => (
-          <article key={f.n}>
-            <div className="text-[12px] font-mono text-ink-mute mb-5">— {f.n}</div>
-            <h3 className="text-h3 mb-3">{f.t}</h3>
-            <p className="text-ink-soft text-[15px] leading-relaxed">{f.d}</p>
-          </article>
-        ))}
-      </section>
-
-      <div className="hr" />
-
-      {/* QUIET PULL QUOTE */}
-      <section className="py-28 max-w-[840px] rise rise-d2">
-        <p className="eyebrow mb-6">design note</p>
-        <p className="text-[clamp(22px,2.6vw,32px)] leading-[1.35] text-ink">
-          The best scoring tools{' '}
-          <span className="text-ink-soft">get out of the way.</span>{' '}
-          You enter a ball; everyone watching sees the result a moment later. That’s it. Everything else is restraint.
-        </p>
-      </section>
+        <section className="mt-3 grid grid-cols-2 gap-2 px-3">
+          <Link href="/matches/create" className="btn btn-primary h-11">Create Match</Link>
+          <Link href="/teams/create" className="btn btn-secondary h-11">New Team</Link>
+        </section>
+      </main>
     </div>
   );
 }

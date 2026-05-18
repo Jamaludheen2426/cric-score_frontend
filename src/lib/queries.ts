@@ -79,7 +79,8 @@ export function useLiveScore(shareToken: string) {
     queryKey: ['live', shareToken],
     queryFn: () => matchesApi.liveScore(shareToken),
     enabled: !!shareToken,
-    refetchInterval: false, // SSE handles updates
+    refetchInterval: false,
+    staleTime: 0,
   });
 }
 
@@ -88,10 +89,12 @@ export function useScoringActions(token: string, matchId: number) {
   const qc = useQueryClient();
   const api = scoringApi(token);
 
-  const invalidate = () => {
-    qc.invalidateQueries({ queryKey: ['matches', matchId] });
-    qc.invalidateQueries({ queryKey: ['live'] });
-    qc.invalidateQueries({ queryKey: ['summary'] });
+  const invalidate = async () => {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ['matches', matchId] }),
+      qc.invalidateQueries({ queryKey: ['live'] }),
+      qc.invalidateQueries({ queryKey: ['summary'] }),
+    ]);
   };
 
   const startMatch = useMutation({ mutationFn: (data: any) => api.start(matchId, data), onSuccess: invalidate });

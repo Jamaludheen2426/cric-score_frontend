@@ -29,7 +29,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
   const [liveData, setLiveData] = useState<LiveScore | null>(null);
 
   const { data: match, isLoading } = useMatch(matchId);
-  const { data: initialLiveScore } = useLiveScore(match?.share_token || '');
+  const { data: initialLiveScore, refetch: refetchLiveScore, isFetching: isLiveFetching } = useLiveScore(match?.share_token || '');
 
   useEffect(() => { if (initialLiveScore) setLiveData(initialLiveScore); }, [initialLiveScore]);
 
@@ -65,13 +65,19 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
   const willCompleteOver = (ball: any) =>
     (currentOver?.legal_balls || 0) + (!ball.is_wide && !ball.is_noball ? 1 : 0) >= 6;
 
+  const refreshLiveScore = async () => {
+    const fresh = await refetchLiveScore();
+    if (fresh.data) setLiveData(fresh.data);
+  };
+
   const handleBall = (data: any) => {
     if (data.is_wicket) {
       setPendingBall(data);
       setShowWicketModal(true);
     } else {
       addBall.mutate(data, {
-        onSuccess: (res: any) => {
+        onSuccess: async (res: any) => {
+          await refreshLiveScore();
           // Innings/match closed, no new bowler needed.
           if (res?.allOut || res?.oversFinished || res?.targetReached) return;
           if (willCompleteOver(data)) {
@@ -86,7 +92,8 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
     setShowWicketModal(false);
     const ball = { ...(pendingBall || { runs: 0 }), ...wicketData };
     addBall.mutate(ball, {
-      onSuccess: (res: any) => {
+      onSuccess: async (res: any) => {
+        await refreshLiveScore();
         if (res?.allOut || res?.oversFinished || res?.targetReached) return;
         if (willCompleteOver(ball)) setShowBowlerModal(true);
       },
@@ -140,6 +147,11 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
       {/* ACTIVE SCORING */}
       {(match.status === 'live' || liveData) && currentInnings && liveData && (
         <div>
+          {(addBall.isPending || isLiveFetching) && (
+            <div className="sticky top-0 z-40 border-b border-[var(--green)] bg-[#0f2318] px-3 py-1.5 text-center text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--green-text)]">
+              Updating score
+            </div>
+          )}
           <ScoreHeader liveData={liveData} match={match} />
 
           {currentOver && (
@@ -178,9 +190,13 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
             <>
               <BallInputPanel
                 onBall={handleBall}
-                onUndo={() => { if (confirm('Undo the last ball?')) undoBall.mutate(); }}
-                disabled={addBall.isPending}
-                isLoading={addBall.isPending}
+                onUndo={() => {
+                  if (confirm('Undo the last ball?')) {
+                    undoBall.mutate(undefined, { onSuccess: refreshLiveScore });
+                  }
+                }}
+                disabled={addBall.isPending || undoBall.isPending || isLiveFetching}
+                isLoading={addBall.isPending || undoBall.isPending || isLiveFetching}
                 canUndo={(currentOver?.legal_balls ?? 0) > 0 || (liveData?.currentOverBalls?.length ?? 0) > 0}
               />
             </>
@@ -210,7 +226,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
           <ScoreHeader liveData={liveData} match={match} />
           <section className="m-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3">
             <p className="eyebrow mb-3">Innings closed</p>
-            <h2 className="text-h2 mb-3">
+            <h2 className="mb-3 text-[16px] font-bold text-[var(--text-primary)]">
               {(liveData?.innings?.length ?? 0) < 2 ? 'Time for the chase.' : 'Both teams have batted.'}
             </h2>
             <p className="mb-3 mt-1 max-w-md text-[13px] text-[var(--text-secondary)]">
