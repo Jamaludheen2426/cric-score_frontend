@@ -25,23 +25,23 @@ export function StartMatchModal({ match, onConfirm, onClose, isLoading }: Props)
 
   return (
     <div className="fixed inset-0 z-[70] grid place-items-center bg-black/85 p-4">
-      <div className="w-full max-w-[420px] rounded-lg border border-[var(--border)] bg-[var(--bg-card)]">
+      <div className="w-full max-w-[420px] rounded border border-[var(--border)] bg-[var(--bg-card)]">
         <header className="flex h-11 items-center justify-between border-b border-[var(--border)] px-3">
-          <h2 className="text-[14px] font-bold uppercase">Open play</h2>
+          <h2 className="text-[14px] font-bold">Open play</h2>
           <button onClick={onClose} className="text-[var(--text-secondary)]"><X size={18} /></button>
         </header>
         <div className="p-3">
           <p className="eyebrow mb-2">Toss won by</p>
           <div className="mb-3 grid grid-cols-2 gap-2">
             {[match.teamA, match.teamB].map(t => t && (
-              <button key={t.id} onClick={() => setTossWinner(String(t.id))} className={`h-10 rounded border text-[13px] font-semibold ${String(t.id) === tossWinner ? 'border-[var(--green)] bg-[#0f2318] text-[var(--green-text)]' : 'border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-secondary)]'}`}>{t.name}</button>
+              <button key={t.id} onClick={() => setTossWinner(String(t.id))} className={`h-10 rounded border text-[13px] font-semibold ${String(t.id) === tossWinner ? 'border-[var(--green)] bg-[#edf7ee] text-[var(--green-text)]' : 'border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-secondary)]'}`}>{t.name}</button>
             ))}
           </div>
           {tossWinner && (
             <>
               <p className="eyebrow mb-2">Elected to</p>
               <div className="mb-3 grid grid-cols-2 gap-2">
-                {(['bat', 'bowl'] as const).map(v => <button key={v} onClick={() => setElectedTo(v)} className={`h-10 rounded border text-[13px] font-semibold uppercase ${electedTo === v ? 'border-[var(--green)] bg-[#0f2318] text-[var(--green-text)]' : 'border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-secondary)]'}`}>{v}</button>)}
+                {(['bat', 'bowl'] as const).map(v => <button key={v} onClick={() => setElectedTo(v)} className={`h-10 rounded border text-[13px] font-semibold ${electedTo === v ? 'border-[var(--green)] bg-[#edf7ee] text-[var(--green-text)]' : 'border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-secondary)]'}`}>{v}</button>)}
               </div>
               <div className="grid gap-2">
                 <select className="input" value={batsman1} onChange={e => setBatsman1(e.target.value)}>

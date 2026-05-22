@@ -17,9 +17,9 @@ export function BowlerSelectModal({ players, currentBowlerId, onSelect, onClose,
 
   return (
     <div className="fixed inset-0 z-[70] grid place-items-center bg-black/85 p-4">
-      <div className="w-full max-w-[420px] rounded-lg border border-[var(--border)] bg-[var(--bg-card)]">
+      <div className="w-full max-w-[420px] rounded border border-[var(--border)] bg-[var(--bg-card)]">
         <header className="flex h-11 items-center justify-between border-b border-[var(--border)] px-3">
-          <h2 className="text-[14px] font-bold uppercase">Select bowler</h2>
+          <h2 className="text-[14px] font-bold">Select bowler</h2>
           <button onClick={onClose} className="text-[var(--text-secondary)]"><X size={18} /></button>
         </header>
         <div className="max-h-[320px] overflow-y-auto">
@@ -27,7 +27,7 @@ export function BowlerSelectModal({ players, currentBowlerId, onSelect, onClose,
             const disabled = p.id === currentBowlerId;
             const active = selected === p.id;
             return (
-              <button key={p.id} disabled={disabled} onClick={() => setSelected(p.id)} className={`flex h-11 w-full items-center justify-between border-b border-[var(--border-subtle)] px-3 text-left ${active ? 'border-l-2 border-l-[var(--green-bright)] bg-[#0f2318]' : 'bg-[var(--bg-elevated)]'} ${disabled ? 'text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}>
+              <button key={p.id} disabled={disabled} onClick={() => setSelected(p.id)} className={`flex h-11 w-full items-center justify-between border-b border-[var(--border-subtle)] px-3 text-left ${active ? 'border-l-2 border-l-[var(--green-bright)] bg-[#edf7ee]' : 'bg-[var(--bg-card)]'} ${disabled ? 'text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}>
                 <span className="text-[14px] font-semibold">{p.name}</span>
                 {disabled && <span className="text-[11px] text-[var(--text-muted)]">just bowled</span>}
               </button>

@@ -17,8 +17,8 @@ export function OverDisplay({ balls, legalBalls }: Props) {
   const extras = balls.filter(b => b.is_wide || b.is_noball);
 
   return (
-    <section className="sticky top-[120px] z-30 flex h-11 items-center gap-2 overflow-x-auto border-b border-[var(--border-subtle)] bg-[var(--bg-app)] px-3">
-      <span className="shrink-0 text-[10px] font-bold uppercase tracking-[.05em] text-[var(--text-muted)]">This over</span>
+    <section className="sticky top-[132px] z-30 flex h-12 items-center gap-2 overflow-x-auto border-b border-[var(--border-subtle)] bg-[#f8f9f5] px-3">
+      <span className="shrink-0 text-[11px] font-semibold text-[var(--text-secondary)]">This over</span>
       {slots.map((ball, i) => ball ? (
         <span key={i} className={getBallColor(ball)}>{getBallLabel(ball)}</span>
       ) : (

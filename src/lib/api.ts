@@ -36,6 +36,14 @@ export const matchesApi = {
     api.get(`/matches/live/${shareToken}`).then(r => r.data.data),
 };
 
+export const tournamentsApi = {
+  list: () => api.get('/tournaments').then(r => r.data.data),
+  get: (id: number) => api.get(`/tournaments/${id}`).then(r => r.data.data),
+  create: (data: any) => api.post('/tournaments', data).then(r => r.data.data),
+  createDemo: () => api.post('/tournaments/demo').then(r => r.data.data),
+  generateFixtures: (id: number) => api.post(`/tournaments/${id}/fixtures`).then(r => r.data.data),
+};
+
 // ── Scoring (requires auth token) ─────────────────────────────
 export function scoringApi(token: string) {
   const headers = { Authorization: `Bearer ${token}` };

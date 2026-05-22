@@ -19,6 +19,7 @@ export interface Match {
   title: string;
   team_a_id: number;
   team_b_id: number;
+  tournament_id?: number;
   total_overs: number;
   players_per_side: number;
   death_overs_from?: number;
@@ -31,6 +32,22 @@ export interface Match {
   created_at?: string;
   teamA?: Team;
   teamB?: Team;
+  innings?: Innings[];
+}
+
+export interface Tournament {
+  id: number;
+  name: string;
+  format: 'league' | 'knockout';
+  total_overs: number;
+  players_per_side: number;
+  death_overs_from?: number;
+  wide_rule: 'normal' | 'strict';
+  scorer_pin: string;
+  status: 'upcoming' | 'live' | 'completed';
+  created_at?: string;
+  teams?: Team[];
+  matches?: Match[];
 }
 
 export interface Innings {

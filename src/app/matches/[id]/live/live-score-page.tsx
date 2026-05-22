@@ -25,38 +25,33 @@ export function LiveScorePage({ matchId }: { matchId: number }) {
     return () => es.close();
   }, [match?.share_token]);
 
-  const copyShareLink = () => {
+  const copyLink = () => {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
   };
 
-  if (isLoading) return <PageLoader label="Tuning the broadcast" />;
-  if (!match) return <div className="page text-ink-soft">Match not found.</div>;
+  if (isLoading) return <PageLoader label="Loading" />;
+  if (!match) return <div className="page text-[var(--text-secondary)]">Match not found.</div>;
 
   return (
-    <div className="min-h-screen bg-[var(--bg-app)]">
-      <header className="flex h-12 items-center justify-between border-b border-[var(--border)] bg-[var(--bg-card)] px-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className={`live-dot ${connected ? '' : 'opacity-30'}`} />
-            <p className="text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--green-text)]">{connected ? 'Live' : 'Reconnecting'}</p>
-          </div>
-          <p className="truncate text-[13px] font-semibold text-[var(--text-secondary)]">{match.teamA?.name} vs {match.teamB?.name}</p>
+    <div className="app-shell">
+      <header className="sticky top-12 z-30 flex h-12 items-center justify-between border-b border-[var(--border)] bg-[var(--bg-card)] px-3">
+        <Link href="/matches" className="text-[13px] font-semibold text-[var(--blue-text)]">Back</Link>
+        <div className="min-w-0 text-center">
+          <h1 className="truncate text-[14px] font-bold uppercase">{match.title}</h1>
+          <p className="text-[11px] text-[var(--text-secondary)]">
+            <span className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${connected ? 'bg-[var(--green-bright)]' : 'bg-[var(--text-muted)]'}`} />
+            {connected ? 'Live' : 'Connecting'}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href="/matches" className="btn btn-secondary h-8 px-3">Matches</Link>
-          {match.status !== 'completed' && (
-            <Link href={`/matches/${match.id}/score`} className="btn btn-primary h-8 px-3">Scorer</Link>
-          )}
-          <button onClick={copyShareLink} className="btn btn-secondary h-8 px-3">
-            {copied ? 'Copied' : 'Share'}
-          </button>
-        </div>
+        <button onClick={copyLink} className="btn btn-secondary btn-sm">{copied ? 'Copied' : 'Share'}</button>
       </header>
 
-      {!liveData && <PageLoader label="Connecting" />}
-      {liveData && <LiveScoreCard liveData={liveData} match={match} />}
+      <div className="page">
+        {!liveData && <PageLoader label="Connecting" />}
+        {liveData && <LiveScoreCard liveData={liveData} match={match} />}
+      </div>
     </div>
   );
 }

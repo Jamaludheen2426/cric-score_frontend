@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { teamsApi, playersApi, matchesApi, scoringApi } from './api';
+import { teamsApi, playersApi, matchesApi, scoringApi, tournamentsApi } from './api';
 
 // ── Teams ──────────────────────────────────────────────────────
 export function useTeams() {
@@ -85,6 +85,45 @@ export function useLiveScore(shareToken: string) {
 }
 
 // ── Scoring ────────────────────────────────────────────────────
+export function useTournaments() {
+  return useQuery({ queryKey: ['tournaments'], queryFn: tournamentsApi.list });
+}
+
+export function useTournament(id: number) {
+  return useQuery({ queryKey: ['tournaments', id], queryFn: () => tournamentsApi.get(id), enabled: !!id });
+}
+
+export function useCreateTournament() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: tournamentsApi.create,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tournaments'] }),
+  });
+}
+
+export function useCreateDemoTournament() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: tournamentsApi.createDemo,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tournaments'] });
+      qc.invalidateQueries({ queryKey: ['matches'] });
+    },
+  });
+}
+
+export function useGenerateFixtures() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => tournamentsApi.generateFixtures(id),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ['tournaments'] });
+      qc.invalidateQueries({ queryKey: ['tournaments', id] });
+      qc.invalidateQueries({ queryKey: ['matches'] });
+    },
+  });
+}
+
 export function useScoringActions(token: string, matchId: number) {
   const qc = useQueryClient();
   const api = scoringApi(token);

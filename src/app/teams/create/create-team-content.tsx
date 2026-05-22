@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Plus, X } from 'lucide-react';
-import { useCreatePlayer, useCreateTeam } from '@/lib/queries';
+import { useCreateTeam, useCreatePlayer } from '@/lib/queries';
 
 interface PlayerInput {
   name: string;
@@ -19,17 +19,14 @@ export function CreateTeamContent() {
 
   const [teamName, setTeamName] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
-  const [players, setPlayers] = useState<PlayerInput[]>([
-    { name: '', role: 'batsman', batting_order: 1 },
-  ]);
+  const [players, setPlayers] = useState<PlayerInput[]>([{ name: '', role: 'batsman', batting_order: 1 }]);
 
-  const addPlayer = () => setPlayers(prev => [...prev, { name: '', role: 'batsman', batting_order: prev.length + 1 }]);
-  const removePlayer = (i: number) =>
-    setPlayers(prev => prev.filter((_, idx) => idx !== i).map((p, idx) => ({ ...p, batting_order: idx + 1 })));
+  const addPlayer = () => setPlayers(p => [...p, { name: '', role: 'batsman', batting_order: p.length + 1 }]);
+  const removePlayer = (i: number) => setPlayers(p => p.filter((_, idx) => idx !== i).map((x, idx) => ({ ...x, batting_order: idx + 1 })));
   const updatePlayer = (i: number, field: keyof PlayerInput, value: string | number) =>
-    setPlayers(prev => prev.map((p, idx) => idx === i ? { ...p, [field]: value } : p));
+    setPlayers(p => p.map((x, idx) => idx === i ? { ...x, [field]: value } : x));
 
-  const handleSubmit = async () => {
+  const submit = async () => {
     if (!teamName.trim()) return alert('Team name required');
     const team = await createTeam.mutateAsync({ name: teamName, logo_url: logoUrl || undefined });
     for (const p of players.filter(p => p.name.trim())) {
@@ -41,62 +38,37 @@ export function CreateTeamContent() {
   const isLoading = createTeam.isPending || createPlayer.isPending;
 
   return (
-    <div className="min-h-screen bg-[var(--bg-app)]">
-      <header className="flex h-12 items-center justify-between border-b border-[var(--border)] bg-[var(--bg-card)] px-3">
-        <Link href="/teams" className="text-[13px] font-semibold text-[var(--blue-text)]">Back</Link>
-        <h1 className="text-[15px] font-bold text-[var(--text-primary)]">New Team</h1>
-        <button onClick={handleSubmit} disabled={isLoading} className="btn btn-primary h-8 px-3">
-          {isLoading ? 'Saving' : 'Save'}
-        </button>
-      </header>
+    <div className="page">
+      <div className="mb-3 flex items-center gap-2">
+        <Link href="/teams" className="text-[13px] font-semibold text-[var(--blue-text)]">← Back</Link>
+        <h1 className="ml-1 text-[16px] font-bold">New team</h1>
+      </div>
 
-      <main className="mx-auto max-w-3xl">
-        <section className="border-b border-[var(--border-subtle)] px-3 py-3">
-          <p className="text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--text-muted)]">Team Details</p>
-        </section>
-        <div className="bg-[var(--bg-card)]">
-          <label className="flex items-center justify-between gap-3 border-b border-[var(--border-subtle)] px-3 py-3">
-            <span className="text-[13px] text-[var(--text-primary)]">Team name</span>
-            <input
-              className="w-52 max-w-[58vw] rounded-md border border-[var(--border)] bg-[var(--bg-input)] px-3 py-2 text-right text-[13px] text-[var(--text-primary)] outline-none focus:border-[var(--green)]"
-              value={teamName}
-              onChange={e => setTeamName(e.target.value)}
-              placeholder="Team name"
-            />
-          </label>
-          <label className="flex items-center justify-between gap-3 border-b border-[var(--border-subtle)] px-3 py-3">
-            <span className="text-[13px] text-[var(--text-primary)]">Logo URL</span>
-            <input
-              className="w-52 max-w-[58vw] rounded-md border border-[var(--border)] bg-[var(--bg-input)] px-3 py-2 text-right text-[13px] text-[var(--text-primary)] outline-none focus:border-[var(--green)]"
-              value={logoUrl}
-              onChange={e => setLogoUrl(e.target.value)}
-              placeholder="Optional"
-            />
-          </label>
+      <section className="card mb-2.5">
+        <p className="eyebrow mb-2">Team</p>
+        <label className="label">Team name</label>
+        <input className="input mb-2" value={teamName} onChange={e => setTeamName(e.target.value)} placeholder="e.g. Chennai Super Kings" />
+        <label className="label">Crest URL (optional)</label>
+        <input className="input" value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="https://…" />
+      </section>
+
+      <section className="card mb-2.5">
+        <div className="mb-2 flex items-center justify-between">
+          <p className="eyebrow">Roster <span className="ml-1 text-[var(--text-secondary)]">{players.length}</span></p>
+          <button onClick={addPlayer} className="btn btn-secondary btn-sm"><Plus size={12} /> Add</button>
         </div>
-
-        <section className="flex items-center justify-between border-b border-[var(--border-subtle)] px-3 py-3">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--text-muted)]">Players</p>
-            <p className="mt-0.5 text-[12px] text-[var(--text-secondary)]">{players.length} listed</p>
-          </div>
-          <button onClick={addPlayer} className="text-[13px] font-semibold text-[var(--blue-text)]">
-            <Plus size={14} className="mr-1 inline" /> Add Player
-          </button>
-        </section>
-
-        <div className="bg-[var(--bg-card)]">
+        <div className="space-y-2">
           {players.map((player, i) => (
-            <div key={i} className="grid grid-cols-[28px_1fr] gap-2 border-b border-[var(--border-subtle)] p-3 sm:grid-cols-[32px_1fr_180px_36px] sm:items-center">
-              <span className="pt-2 text-center font-mono text-[12px] text-[var(--text-muted)] sm:pt-0">{String(i + 1).padStart(2, '0')}</span>
+            <div key={i} className="grid grid-cols-[28px_1fr_140px_32px] items-center gap-1.5">
+              <span className="text-center font-mono text-[12px] text-[var(--text-muted)]">{String(i + 1).padStart(2, '0')}</span>
               <input
-                className="rounded-md border border-[var(--border)] bg-[var(--bg-input)] px-3 py-2 text-[13px] text-[var(--text-primary)] outline-none focus:border-[var(--green)]"
+                className="input"
                 value={player.name}
                 onChange={e => updatePlayer(i, 'name', e.target.value)}
                 placeholder={`Player ${i + 1}`}
               />
               <select
-                className="col-start-2 rounded-md border border-[var(--border)] bg-[var(--bg-input)] px-3 py-2 text-[13px] text-[var(--text-primary)] outline-none focus:border-[var(--green)] sm:col-start-auto"
+                className="input"
                 value={player.role}
                 onChange={e => updatePlayer(i, 'role', e.target.value)}
               >
@@ -105,13 +77,20 @@ export function CreateTeamContent() {
                 <option value="allrounder">All-rounder</option>
                 <option value="wicketkeeper">Wicketkeeper</option>
               </select>
-              <button onClick={() => removePlayer(i)} className="col-start-2 grid h-9 w-9 place-items-center rounded-md text-[var(--text-muted)] hover:bg-[var(--bg-elevated)] hover:text-[var(--red-text)] sm:col-start-auto" title="Remove">
+              <button onClick={() => removePlayer(i)} className="grid h-8 w-8 place-items-center rounded text-[var(--text-muted)] hover:bg-[var(--bg-elevated)] hover:text-[var(--red-text)]" title="Remove">
                 <X size={14} />
               </button>
             </div>
           ))}
         </div>
-      </main>
+      </section>
+
+      <div className="flex gap-2">
+        <Link href="/teams" className="btn btn-secondary flex-1">Cancel</Link>
+        <button onClick={submit} disabled={isLoading} className="btn btn-primary flex-[1.5]">
+          {isLoading ? 'Creating' : 'Create team'}
+        </button>
+      </div>
     </div>
   );
 }

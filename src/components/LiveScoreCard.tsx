@@ -1,119 +1,205 @@
 'use client';
 
-import { useState } from 'react';
-import { BallRecord, LiveScore, Match } from '@/types';
-import { formatOvers, formatRate, getBallColor, getBallLabel } from '@/lib/utils';
+import { LiveScore, Match, BallRecord } from '@/types';
+import { formatOvers, formatRate, getBallLabel, getBallColor, getScoreDisplay } from '@/lib/utils';
 
-interface Props {
-  liveData: LiveScore;
-  match: Match;
+interface Props { liveData: LiveScore; match: Match; }
+
+function Pellet({ ball }: { ball: BallRecord }) {
+  return <span className={getBallColor(ball)} title={getBallLabel(ball)}>{getBallLabel(ball)}</span>;
 }
 
-type Tab = 'scorecard' | 'overs' | 'info';
+export function LiveScoreCard({ liveData, match }: Props) {
+  const current = liveData.innings.find(i => i.status === 'live');
+  const completed = liveData.innings.filter(i => i.status === 'completed');
 
-function scoreText(inn: LiveScore['innings'][number]) {
-  return `${inn.total_runs}/${inn.total_wickets}`;
-}
-
-function ScoreStrip({ liveData }: { liveData: LiveScore }) {
-  const inn = liveData.innings.find(i => i.status === 'live') || liveData.innings[liveData.innings.length - 1];
-  if (!inn) return null;
-  const need = inn.runs_needed ?? (inn.target ? Math.max(0, inn.target - inn.total_runs) : null);
-  const innings = [...liveData.innings].sort((a, b) => a.innings_number - b.innings_number);
   return (
-    <section className="grid grid-cols-[1fr_auto] items-center gap-3 border-b border-[var(--border)] bg-[var(--bg-card)] px-3 py-2">
-      <div className="grid gap-1.5">
-        {innings.map(summary => (
-          <div key={summary.id} className={`grid grid-cols-[minmax(72px,1fr)_auto_auto] items-baseline gap-2 ${summary.id === inn.id ? '' : 'opacity-70'}`}>
-            <p className="truncate text-[13px] font-bold uppercase text-[var(--text-secondary)]">{summary.battingTeam?.name}</p>
-            <span className={`${summary.id === inn.id ? 'text-[28px]' : 'text-[18px]'} font-bold leading-none text-[var(--text-primary)]`}>{scoreText(summary)}</span>
-            <span className="score-over">({formatOvers(summary.total_overs_bowled)} ov)</span>
+    <div className="space-y-3">
+      {/* HERO score */}
+      {current && (
+        <section className="card">
+          <div className="flex items-end justify-between gap-3">
+            <div className="min-w-0">
+              <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-[var(--green-text)]">
+                <span className="live-dot" /> {current.battingTeam?.name} · INN {current.innings_number}
+              </p>
+              <div className="mt-1 flex items-baseline gap-2">
+                <span className="score-number">{current.total_runs}/{current.total_wickets}</span>
+                <span className="score-over">({formatOvers(current.total_overs_bowled)}/{match.total_overs})</span>
+              </div>
+            </div>
+            {completed[0] && (
+              <div className="text-right">
+                <p className="text-[10px] uppercase tracking-wide text-[var(--text-muted)]">{completed[0].battingTeam?.name}</p>
+                <p className="text-[15px] font-bold tabular-nums text-[var(--text-secondary)]">
+                  {getScoreDisplay(completed[0])}
+                  <span className="ml-1 text-[12px] font-normal text-[var(--text-muted)]">({formatOvers(completed[0].total_overs_bowled)})</span>
+                </p>
+              </div>
+            )}
           </div>
-        ))}
-        {innings.length === 1 && (
-          <div className="grid grid-cols-[minmax(72px,1fr)_auto] items-baseline gap-2 opacity-40">
-            <p className="truncate text-[13px] font-bold uppercase text-[var(--text-secondary)]">{inn.bowlingTeam?.name}</p>
-            <span className="text-[13px] font-semibold text-[var(--text-secondary)]">Yet to bat</span>
+
+          <div className="mt-2 flex flex-wrap items-center gap-3 border-t border-[var(--border-subtle)] pt-2 text-[12px] tabular-nums text-[var(--text-secondary)]">
+            <span>CRR <strong className="text-[var(--text-primary)]">{current.run_rate != null ? formatRate(current.run_rate) : '–'}</strong></span>
+            {current.innings_number === 2 && current.target && (
+              <>
+                <span>·</span>
+                <span>Need <strong className="text-[var(--red-text)]">{Math.max(0, current.target - current.total_runs)}</strong></span>
+                {current.required_rate != null && current.required_rate > 0 && (
+                  <>
+                    <span>·</span>
+                    <span>RRR <strong className="text-[var(--orange-text)]">{formatRate(current.required_rate)}</strong></span>
+                  </>
+                )}
+              </>
+            )}
+            <span className="ml-auto text-[11px] uppercase tracking-wide text-[var(--text-muted)]">Extras {current.extras}</span>
           </div>
-        )}
-      </div>
-      {inn.innings_number === 2 && need != null && (
-        <div className="text-right">
-          <p className="text-[11px] text-[var(--text-secondary)]">Need</p>
-          <p className="text-[20px] font-bold text-[var(--orange-text)]">{need} off {inn.balls_left ?? '-'}</p>
-          <p className="text-[11px] text-[var(--text-secondary)]">balls</p>
-        </div>
+        </section>
       )}
+
+      {/* Recent balls */}
+      {liveData.recentBalls.length > 0 && (
+        <section className="card">
+          <p className="eyebrow mb-2">Recent</p>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {liveData.recentBalls.map((b, i) => <Pellet key={i} ball={b} />)}
+          </div>
+        </section>
+      )}
+
+      {/* Current over */}
+      {liveData.currentOver && (
+        <section className="card">
+          <p className="eyebrow mb-2">
+            Over {liveData.currentOver.over_number} · <span className="text-[var(--text-secondary)] normal-case tracking-normal font-normal">{liveData.currentOver.bowler?.name}</span>
+          </p>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {liveData.currentOverBalls.length > 0
+              ? liveData.currentOverBalls.map((b, i) => <Pellet key={i} ball={b} />)
+              : <p className="text-[12px] text-[var(--text-muted)]">No balls yet this over.</p>}
+          </div>
+        </section>
+      )}
+
+      {/* Live innings: batting + bowling cards */}
+      {current?.battingCards && <BattingTable innings={current} />}
+      {current?.bowlingCards && <BowlingTable innings={current} />}
+
+      {/* Archived innings — both batting AND bowling */}
+      {completed.map(inn => (
+        <div key={inn.id} className="space-y-3">
+          <section className="card">
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="text-[13px] font-bold text-[var(--text-primary)]">
+                {inn.battingTeam?.name} <span className="text-[11px] font-normal uppercase tracking-wide text-[var(--text-muted)]">· archived</span>
+              </p>
+              <p className="text-[15px] font-bold tabular-nums">
+                {getScoreDisplay(inn)} <span className="text-[12px] font-normal text-[var(--text-muted)]">({formatOvers(inn.total_overs_bowled)})</span>
+              </p>
+            </div>
+          </section>
+          <BattingTable innings={inn} />
+          <BowlingTable innings={inn} />
+        </div>
+      ))}
+
+      {match.status === 'completed' && (
+        <section className="card text-center">
+          <p className="eyebrow mb-1.5" style={{ color: 'var(--green-text)' }}>Filed</p>
+          <p className="text-[15px] font-bold">Match closed.</p>
+          <a href={`/matches/${match.id}/summary`} className="btn btn-primary mt-3 inline-flex">Full scorecard</a>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function BattingTable({ innings }: { innings: LiveScore['innings'][number] }) {
+  if (!innings.battingCards?.length) return null;
+  return (
+    <section className="card">
+      <p className="eyebrow mb-2">Batting · {innings.battingTeam?.name}</p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr className="border-b border-[var(--border-subtle)]">
+              <th className="table-head px-2 py-1.5 text-left">Batsman</th>
+              <th className="table-head px-2 py-1.5 text-left">Dismissal</th>
+              <th className="table-head px-2 py-1.5 text-right">R</th>
+              <th className="table-head px-2 py-1.5 text-right">B</th>
+              <th className="table-head px-2 py-1.5 text-right">4s</th>
+              <th className="table-head px-2 py-1.5 text-right">6s</th>
+              <th className="table-head px-2 py-1.5 text-right">SR</th>
+            </tr>
+          </thead>
+          <tbody>
+            {innings.battingCards!.sort((a, b) => a.batting_position - b.batting_position).map(card => {
+              const onStrike = card.player_id === innings.on_strike_batsman_id;
+              const sr = card.balls > 0 ? ((card.runs / card.balls) * 100).toFixed(1) : '—';
+              return (
+                <tr key={card.id} className="border-b border-[var(--border-subtle)] last:border-b-0">
+                  <td className="table-cell">
+                    {onStrike && <span className="mr-1 text-[var(--green-text)]">*</span>}
+                    <span className="font-semibold">{card.player?.name}</span>
+                  </td>
+                  <td className="table-cell text-[11px] text-[var(--text-muted)]">
+                    {card.is_out
+                      ? <>{card.dismissal_type?.replace(/_/g, ' ')}{card.bowler && ` · b. ${card.bowler.name}`}</>
+                      : <span className="text-[var(--text-secondary)]">not out</span>}
+                  </td>
+                  <td className="table-cell text-right font-bold">{card.runs}</td>
+                  <td className="table-cell text-right text-[var(--text-secondary)]">{card.balls}</td>
+                  <td className="table-cell text-right text-[var(--text-secondary)]">{card.fours}</td>
+                  <td className="table-cell text-right text-[var(--text-secondary)]">{card.sixes}</td>
+                  <td className="table-cell text-right text-[var(--text-secondary)]">{sr}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
 
-function PelletRow({ balls }: { balls: BallRecord[] }) {
-  return <div className="flex flex-wrap gap-1.5">{balls.map((b, i) => <span key={i} className={getBallColor(b)}>{getBallLabel(b)}</span>)}</div>;
-}
-
-export function LiveScoreCard({ liveData, match }: Props) {
-  const [tab, setTab] = useState<Tab>('scorecard');
-  const inn = liveData.innings.find(i => i.status === 'live') || liveData.innings[liveData.innings.length - 1];
-
+function BowlingTable({ innings }: { innings: LiveScore['innings'][number] }) {
+  if (!innings.bowlingCards?.length) return null;
   return (
-    <div className="bg-[var(--bg-app)]">
-      <ScoreStrip liveData={liveData} />
-      <div className="flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2">
-        <p className="truncate text-[13px] font-bold text-[var(--text-primary)]">{match.title}</p>
-        {match.status === 'live' && <span className="badge-live"><span className="live-dot" />Live</span>}
-      </div>
-      <div className="tabbar">
-        {(['scorecard', 'overs', 'info'] as Tab[]).map(t => <button key={t} onClick={() => setTab(t)} className={`tab-button ${tab === t ? 'tab-button-active' : ''}`}>{t}</button>)}
-      </div>
-
-      {tab === 'scorecard' && inn && (
-        <div>
-          <p className="eyebrow px-3 py-2">Batting</p>
-          <div className="border-y border-[var(--border-subtle)]">
-            <div className="grid grid-cols-[1fr_58px_46px_64px] gap-2 border-b border-[var(--border-subtle)] px-3 py-2">
-              <span className="table-head text-left">Batter</span>
-              <span className="table-head text-right">R</span>
-              <span className="table-head text-right">B</span>
-              <span className="table-head text-right">SR</span>
-            </div>
-            {inn.battingCards?.sort((a, b) => a.batting_position - b.batting_position).map(card => {
-              const striker = card.player_id === inn.on_strike_batsman_id;
-              const strikeRate = card.balls ? formatRate((card.runs / card.balls) * 100) : '-';
+    <section className="card">
+      <p className="eyebrow mb-2">Bowling · {innings.bowlingTeam?.name}</p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr className="border-b border-[var(--border-subtle)]">
+              <th className="table-head px-2 py-1.5 text-left">Bowler</th>
+              <th className="table-head px-2 py-1.5 text-right">O</th>
+              <th className="table-head px-2 py-1.5 text-right">R</th>
+              <th className="table-head px-2 py-1.5 text-right">W</th>
+              <th className="table-head px-2 py-1.5 text-right">Econ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {innings.bowlingCards!.map(card => {
+              const econ = card.legal_balls > 0 ? ((card.runs / card.legal_balls) * 6).toFixed(2) : '—';
+              const overs = card.overs != null ? Number(card.overs).toFixed(1) : '0.0';
+              const isCurrent = card.player_id === innings.current_bowler_id;
               return (
-                <div
-                  key={card.id}
-                  className={`grid min-h-10 grid-cols-[1fr_58px_46px_64px] items-center gap-2 border-b border-[var(--border-subtle)] px-3 py-2 last:border-b-0 ${
-                    striker ? 'border-l-2 border-l-[var(--green-bright)] bg-[#0f2318]' : ''
-                  } ${card.is_out ? 'text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      {striker && <span className="text-[10px] font-bold text-[var(--green-text)]">*</span>}
-                      <span className="truncate text-[14px] font-semibold">{card.player?.name}</span>
-                    </div>
-                    <span className="block text-[11px] text-[var(--text-muted)]">{card.is_out ? card.dismissal_type?.replace(/_/g, ' ') : 'not out'}</span>
-                  </div>
-                  <span className="text-right text-[13px] font-semibold tabular-nums">{card.runs}{striker ? '*' : ''}</span>
-                  <span className="text-right text-[13px] text-[var(--text-secondary)] tabular-nums">{card.balls}</span>
-                  <span className="text-right text-[12px] text-[var(--text-secondary)] tabular-nums">{strikeRate}</span>
-                </div>
+                <tr key={card.id} className="border-b border-[var(--border-subtle)] last:border-b-0">
+                  <td className="table-cell">
+                    {isCurrent && <span className="mr-1 text-[var(--green-text)]">●</span>}
+                    <span className="font-semibold">{card.player?.name}</span>
+                  </td>
+                  <td className="table-cell text-right">{overs}</td>
+                  <td className="table-cell text-right">{card.runs}</td>
+                  <td className="table-cell text-right font-bold" style={{ color: 'var(--green-text)' }}>{card.wickets}</td>
+                  <td className="table-cell text-right text-[var(--text-secondary)]">{econ}</td>
+                </tr>
               );
             })}
-          </div>
-          <p className="eyebrow px-3 py-2">Bowling</p>
-          <table className="w-full">
-            <thead><tr className="border-b border-[var(--border-subtle)]"><th className="table-head px-3 py-2 text-left">Bowler</th><th className="table-head px-2 text-right">O</th><th className="table-head px-2 text-right">R</th><th className="table-head px-2 text-right">W</th><th className="table-head px-3 text-right">Econ</th></tr></thead>
-            <tbody>{inn.bowlingCards?.map(card => <tr key={card.id} className={`border-b border-[var(--border-subtle)] ${card.player_id === inn.current_bowler_id ? 'border-l-2 border-l-[var(--blue)] bg-[#0d1f2e]' : ''}`}><td className="table-cell font-semibold">{card.player?.name}</td><td className="table-cell text-right">{Number(card.overs).toFixed(1)}</td><td className="table-cell text-right">{card.runs}</td><td className="table-cell text-right">{card.wickets}</td><td className="table-cell text-right">{card.legal_balls ? formatRate((card.runs / card.legal_balls) * 6) : '-'}</td></tr>)}</tbody>
-          </table>
-          <p className="eyebrow px-3 py-2">Fall of wickets</p>
-          <div className="border-y border-[var(--border-subtle)] px-3 py-2 text-[12px] text-[var(--text-muted)]">
-            Fall data is not available from the live feed yet.
-          </div>
-        </div>
-      )}
-      {tab === 'overs' && <div className="p-3"><p className="eyebrow mb-2">Current over</p><PelletRow balls={liveData.currentOverBalls} /></div>}
-      {tab === 'info' && <div className="divide-y divide-[var(--border-subtle)]">{[['Format', `${match.total_overs} overs`], ['Players', `${match.players_per_side} per side`], ['Wide rule', match.wide_rule], ['Death overs', match.death_overs_from || '-']].map(([l, v]) => <div key={l} className="flex justify-between px-3 py-2 text-[13px]"><span className="text-[var(--text-secondary)]">{l}</span><span className="font-semibold text-[var(--text-primary)]">{v}</span></div>)}</div>}
-    </div>
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
