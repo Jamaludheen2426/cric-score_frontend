@@ -153,15 +153,15 @@ export function useScoringActions(token: string, matchId: number) {
     ]);
   };
 
-  // Per-ball mutations are tagged 'quiet' so the global loader overlay
-  // doesn't flash on every tap. They still show inline button feedback
-  // via mutation.isPending.
-  const startMatch  = useMutation({ mutationFn: (data: any)            => api.start(matchId, data),           onSuccess: invalidateAll  });
-  const addBall     = useMutation({ mutationKey: ['quiet','ball'],     mutationFn: (data: any) => api.addBall(matchId, data),                onSuccess: invalidateMatch });
-  const endOver     = useMutation({ mutationKey: ['quiet','end-over'], mutationFn: (nextBowlerId: number) => api.endOver(matchId, nextBowlerId), onSuccess: invalidateMatch });
-  const endInnings  = useMutation({ mutationFn: (data: any)            => api.endInnings(matchId, data),      onSuccess: invalidateAll  });
-  const endMatch    = useMutation({ mutationFn: ()                      => api.endMatch(matchId),             onSuccess: invalidateAll  });
-  const undoBall    = useMutation({ mutationKey: ['quiet','undo'],     mutationFn: () => api.undoBall(matchId),                              onSuccess: invalidateMatch });
+  // Every mutation shows the global overlay — the user wants visible
+  // feedback for ball posts, bowler change, undo, etc. The overlay closes
+  // as soon as the mutation resolves so it doesn't block tap rhythm.
+  const startMatch = useMutation({ mutationFn: (data: any)              => api.start(matchId, data),               onSuccess: invalidateAll  });
+  const addBall    = useMutation({ mutationFn: (data: any)              => api.addBall(matchId, data),             onSuccess: invalidateMatch });
+  const endOver    = useMutation({ mutationFn: (nextBowlerId: number)   => api.endOver(matchId, nextBowlerId),     onSuccess: invalidateMatch });
+  const endInnings = useMutation({ mutationFn: (data: any)              => api.endInnings(matchId, data),          onSuccess: invalidateAll  });
+  const endMatch   = useMutation({ mutationFn: ()                        => api.endMatch(matchId),                  onSuccess: invalidateAll  });
+  const undoBall   = useMutation({ mutationFn: ()                        => api.undoBall(matchId),                  onSuccess: invalidateMatch });
 
   return { startMatch, addBall, endOver, endInnings, endMatch, undoBall };
 }
