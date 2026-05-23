@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { Match, Player } from '@/types';
+import { TossCoin } from '@/components/TossCoin';
 
 interface Props {
   match: Match;
@@ -16,7 +17,9 @@ type Step = 'toss' | 'elect' | 'openers' | 'bowler';
 export function StartMatchModal({ match, onConfirm, onClose, isLoading }: Props) {
   const [step, setStep] = useState<Step>('toss');
   const [tossWinner, setTossWinner] = useState('');
+  const [tossSide, setTossSide] = useState<'heads' | 'tails' | null>(null);
   const [tossFlipping, setTossFlipping] = useState(false);
+  const [coinTrigger, setCoinTrigger] = useState(0);
   const [electedTo, setElectedTo] = useState<'bat' | 'bowl'>('bat');
   const [batsman1, setBatsman1] = useState('');
   const [batsman2, setBatsman2] = useState('');
@@ -34,13 +37,29 @@ export function StartMatchModal({ match, onConfirm, onClose, isLoading }: Props)
   const battingTeam = battingTeamId === match.team_a_id ? match.teamA : battingTeamId === match.team_b_id ? match.teamB : null;
   const bowlingTeam = bowlingTeamId === match.team_a_id ? match.teamA : bowlingTeamId === match.team_b_id ? match.teamB : null;
 
-  // Trigger the coin animation once when a team is picked, then advance.
-  useEffect(() => {
-    if (!tossWinner || step !== 'toss') return;
+  // New flow: tap a team to call heads/tails, the coin flips, the landed
+  // side decides the toss winner — only then do we advance to the elect step.
+  const callToss = (teamId: number, side: 'heads' | 'tails') => {
+    if (tossFlipping) return;
     setTossFlipping(true);
-    const t = setTimeout(() => { setTossFlipping(false); setStep('elect'); }, 1500);
-    return () => clearTimeout(t);
-  }, [tossWinner, step]);
+    // Remember which team called what so we can decide who won when the coin lands
+    setPendingCall({ teamId, side });
+    setCoinTrigger(c => c + 1);
+  };
+
+  const [pendingCall, setPendingCall] = useState<{ teamId: number; side: 'heads' | 'tails' } | null>(null);
+
+  const onCoinLanded = (landed: 'heads' | 'tails') => {
+    setTossSide(landed);
+    setTossFlipping(false);
+    if (!pendingCall) return;
+    // If the caller's side matches the result, they win. Otherwise the OTHER team wins.
+    const winnerId = pendingCall.side === landed
+      ? pendingCall.teamId
+      : (pendingCall.teamId === match.team_a_id ? match.team_b_id : match.team_a_id);
+    setTossWinner(String(winnerId));
+    setTimeout(() => setStep('elect'), 750);
+  };
 
   const canSubmit = batsman1 && batsman2 && bowler && batsman1 !== batsman2;
   const submit = () => onConfirm({
@@ -84,30 +103,41 @@ export function StartMatchModal({ match, onConfirm, onClose, isLoading }: Props)
         {/* STEP 1 — TOSS */}
         {step === 'toss' && (
           <div className="step-reveal p-4">
-            <div className="mx-auto mb-4 flex h-28 items-center justify-center">
-              <span className={`toss-coin ${tossFlipping ? 'flipping' : ''}`}>
-                {tossFlipping ? '?' : tossWinner ? teamNameOf(Number(tossWinner)).slice(0, 1).toUpperCase() : '🪙'}
-              </span>
+            <div className="mb-4 flex justify-center">
+              <TossCoin trigger={coinTrigger} onLanded={onCoinLanded} />
             </div>
-            <p className="mb-2 text-center text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--text-muted)]">
-              {tossFlipping ? 'Flipping…' : 'Who won the toss?'}
+
+            <p className="mb-3 text-center text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--text-muted)]">
+              {tossFlipping
+                ? 'Flipping…'
+                : tossWinner
+                  ? `${teamNameOf(Number(tossWinner))} wins the toss (${tossSide})`
+                  : 'Tap a team and call heads or tails'}
             </p>
-            <div className="grid grid-cols-2 gap-2">
-              {[match.teamA, match.teamB].map(t => t && (
-                <button
-                  key={t.id}
-                  disabled={tossFlipping}
-                  onClick={() => setTossWinner(String(t.id))}
-                  className={`h-11 rounded-md border text-[13px] font-bold transition-colors ${
-                    String(t.id) === tossWinner
-                      ? 'border-[var(--green)] bg-[#edf7ee] text-[var(--green-text)]'
-                      : 'border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-secondary)] hover:border-[var(--text-secondary)]'
-                  }`}
-                >
-                  {t.name}
-                </button>
-              ))}
-            </div>
+
+            {!tossWinner && !tossFlipping && (
+              <div className="space-y-3">
+                {[match.teamA, match.teamB].map(t => t && (
+                  <div key={t.id} className="rounded-md border border-[var(--border)] p-2.5">
+                    <p className="mb-2 text-center text-[13px] font-bold text-[var(--text-primary)]">{t.name}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => callToss(t.id, 'heads')}
+                        className="h-10 rounded border border-[var(--border)] bg-[var(--bg-card)] text-[12px] font-bold uppercase tracking-wide text-[var(--text-secondary)] hover:border-[var(--green)] hover:bg-[#edf7ee] hover:text-[var(--green-text)]"
+                      >
+                        Call Heads
+                      </button>
+                      <button
+                        onClick={() => callToss(t.id, 'tails')}
+                        className="h-10 rounded border border-[var(--border)] bg-[var(--bg-card)] text-[12px] font-bold uppercase tracking-wide text-[var(--text-secondary)] hover:border-[var(--green)] hover:bg-[#edf7ee] hover:text-[var(--green-text)]"
+                      >
+                        Call Tails
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

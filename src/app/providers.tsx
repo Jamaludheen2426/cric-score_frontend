@@ -3,6 +3,7 @@
 import { QueryCache, QueryClient, QueryClientProvider, MutationCache } from '@tanstack/react-query';
 import { useState } from 'react';
 import { ErrorToast } from '@/components/ErrorToast';
+import { GlobalLoader } from '@/components/GlobalLoader';
 
 let pushError: ((msg: string) => void) | null = null;
 
@@ -32,6 +33,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <GlobalLoader />
       <ErrorToast registerPush={(fn) => { pushError = fn; }} />
       {children}
     </QueryClientProvider>

@@ -154,30 +154,54 @@
     100% { transform: rotate(360deg); }
   }
 
-  /* Toss coin flip — a single full flip + wobble landing */
-  .toss-coin {
-    display: inline-block;
-    width: 84px;
-    height: 84px;
+  /* Toss coin — two-face 3D coin */
+  .coin-stage     { perspective: 800px; display: inline-block; }
+  .coin {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    transform-style: preserve-3d;
+    transition: transform 1.6s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+  }
+  .coin-face {
+    position: absolute;
+    inset: 0;
     border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, #f6d784 0%, #d4a23c 55%, #8a6520 100%);
-    box-shadow: inset -8px -8px 0 rgba(0,0,0,0.18), 0 6px 16px rgba(0,0,0,0.18);
-    color: #5b3e0e;
-    font-weight: 800;
-    font-size: 28px;
     display: grid;
     place-items: center;
-    transform-style: preserve-3d;
+    backface-visibility: hidden;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #5b3e0e;
+    background: radial-gradient(circle at 35% 30%, #f6d784 0%, #d4a23c 55%, #8a6520 100%);
+    box-shadow:
+      inset -6px -6px 0 rgba(0,0,0,0.18),
+      inset 6px 6px 0 rgba(255,255,255,0.20),
+      0 8px 18px rgba(0,0,0,0.22);
+    border: 2px solid #b88a2e;
   }
-  .toss-coin.flipping {
-    animation: toss-flip 1.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  .coin-face-heads { transform: rotateY(0deg); }
+  .coin-face-tails { transform: rotateY(180deg); }
+
+  /* Coin shadow under the coin (squashes during the toss) */
+  .coin-shadow {
+    margin: 12px auto 0;
+    width: 60px; height: 8px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.22);
+    filter: blur(4px);
+    transition: transform 0.6s ease;
   }
-  @keyframes toss-flip {
-    0%   { transform: rotateX(0deg)    translateY(0); }
-    35%  { transform: rotateX(1080deg) translateY(-28px); }
-    65%  { transform: rotateX(1620deg) translateY(0); }
-    80%  { transform: rotateX(1640deg) translateY(-4px); }
-    100% { transform: rotateX(1620deg) translateY(0); }
+  .coin.is-tossing + .coin-shadow {
+    animation: coin-shadow-pulse 1.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes coin-shadow-pulse {
+    0%   { transform: scaleX(1); }
+    40%  { transform: scaleX(0.45); opacity: 0.4; }
+    100% { transform: scaleX(1); }
   }
 
   /* Step reveal for the progressive Start Match modal */
