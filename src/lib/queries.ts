@@ -42,6 +42,15 @@ export function useCreatePlayer() {
   });
 }
 
+export function useUpdatePlayer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ teamId, playerId, data }: { teamId: number; playerId: number; data: any }) =>
+      playersApi.update(teamId, playerId, data),
+    onSuccess: (_, { teamId }) => qc.invalidateQueries({ queryKey: ['teams', teamId] }),
+  });
+}
+
 export function useDeletePlayer() {
   const qc = useQueryClient();
   return useMutation({
