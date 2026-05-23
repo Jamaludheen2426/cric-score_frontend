@@ -128,7 +128,15 @@ export function useScoringActions(token: string, matchId: number) {
   const qc = useQueryClient();
   const api = scoringApi(token);
 
-  const invalidate = async () => {
+  // Lightweight invalidate: only the match metadata. Don't refetch the
+  // live score after every ball — SSE already pushes the next snapshot
+  // a moment later. Refetching live here would force a second heavy
+  // round-trip on top of the mutation and freeze the UI for seconds.
+  const invalidateMatch = () => qc.invalidateQueries({ queryKey: ['matches', matchId] });
+
+  // Full invalidate (live + summary too) for status-changing actions
+  // where the user expects an immediate refresh even if SSE is slow.
+  const invalidateAll = async () => {
     await Promise.all([
       qc.invalidateQueries({ queryKey: ['matches', matchId] }),
       qc.invalidateQueries({ queryKey: ['live'] }),
@@ -136,12 +144,12 @@ export function useScoringActions(token: string, matchId: number) {
     ]);
   };
 
-  const startMatch = useMutation({ mutationFn: (data: any) => api.start(matchId, data), onSuccess: invalidate });
-  const addBall = useMutation({ mutationFn: (data: any) => api.addBall(matchId, data), onSuccess: invalidate });
-  const endOver = useMutation({ mutationFn: (nextBowlerId: number) => api.endOver(matchId, nextBowlerId), onSuccess: invalidate });
-  const endInnings = useMutation({ mutationFn: (data: any) => api.endInnings(matchId, data), onSuccess: invalidate });
-  const endMatch = useMutation({ mutationFn: () => api.endMatch(matchId), onSuccess: invalidate });
-  const undoBall = useMutation({ mutationFn: () => api.undoBall(matchId), onSuccess: invalidate });
+  const startMatch  = useMutation({ mutationFn: (data: any)          => api.start(matchId, data),         onSuccess: invalidateAll  });
+  const addBall     = useMutation({ mutationFn: (data: any)          => api.addBall(matchId, data),       onSuccess: invalidateMatch });
+  const endOver     = useMutation({ mutationFn: (nextBowlerId: number) => api.endOver(matchId, nextBowlerId), onSuccess: invalidateMatch });
+  const endInnings  = useMutation({ mutationFn: (data: any)          => api.endInnings(matchId, data),    onSuccess: invalidateAll  });
+  const endMatch    = useMutation({ mutationFn: ()                    => api.endMatch(matchId),           onSuccess: invalidateAll  });
+  const undoBall    = useMutation({ mutationFn: ()                    => api.undoBall(matchId),           onSuccess: invalidateMatch });
 
   return { startMatch, addBall, endOver, endInnings, endMatch, undoBall };
 }
