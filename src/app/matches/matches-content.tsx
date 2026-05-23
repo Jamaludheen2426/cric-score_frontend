@@ -7,34 +7,42 @@ import { Match } from '@/types';
 
 function MatchRow({ match }: { match: Match }) {
   const isLive = match.status === 'live';
-  const href =
-    isLive                          ? `/matches/${match.id}/live` :
-    match.status === 'completed'    ? `/matches/${match.id}/summary` :
-                                      `/matches/${match.id}/score`;
+  const isCompleted = match.status === 'completed';
+  // Primary destination: the scoring desk for live & pending (PIN-gated for
+  // anyone who isn't the scorer), or the archived scorecard for completed.
+  const primaryHref = isCompleted ? `/matches/${match.id}/summary` : `/matches/${match.id}/score`;
 
   return (
-    <Link
-      href={href}
-      className="flex items-center gap-3 border-b border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2.5 last:border-b-0 hover:bg-[var(--bg-elevated)]"
-    >
-      <div className="min-w-0 flex-1">
+    <div className="relative flex items-center gap-3 border-b border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2.5 last:border-b-0 hover:bg-[var(--bg-elevated)]">
+      <Link href={primaryHref} className="absolute inset-0" aria-label={`Open ${match.title}`} />
+      <div className="relative z-[1] min-w-0 flex-1 pointer-events-none">
         <div className="mb-1 flex items-center gap-2">
           <span className="font-mono text-[11px] text-[var(--text-muted)]">#{String(match.id).padStart(3, '0')}</span>
           {isLive                       && <span className="badge-live"><span className="live-dot" /> Live</span>}
           {match.status === 'pending'   && <span className="badge-pending">Upcoming</span>}
-          {match.status === 'completed' && <span className="badge-completed">Completed</span>}
+          {isCompleted                  && <span className="badge-completed">Completed</span>}
         </div>
         <p className="truncate text-[14px] font-bold text-[var(--text-primary)]">{match.title}</p>
         <p className="truncate text-[12px] text-[var(--text-secondary)]">
           {match.teamA?.name || 'Team A'} <span className="text-[var(--text-muted)]">vs</span> {match.teamB?.name || 'Team B'}
         </p>
       </div>
-      <div className="shrink-0 text-right">
+      <div className="relative z-[1] shrink-0 text-right pointer-events-none">
         <p className="text-[11px] uppercase tracking-wide text-[var(--text-muted)]">Overs</p>
         <p className="text-[16px] font-bold tabular-nums text-[var(--text-primary)]">{match.total_overs}</p>
       </div>
-      <span className="text-[var(--text-muted)]">›</span>
-    </Link>
+      {isLive && (
+        <Link
+          href={`/matches/${match.id}/live`}
+          onClick={e => e.stopPropagation()}
+          className="relative z-[2] inline-flex h-7 items-center gap-1 rounded border border-[var(--border)] bg-[var(--bg-card)] px-2 text-[11px] font-bold uppercase tracking-wide text-[var(--green-text)] hover:bg-[var(--bg-elevated)]"
+          aria-label="Open public live scorecard"
+        >
+          Watch
+        </Link>
+      )}
+      <span className="relative z-[1] text-[var(--text-muted)] pointer-events-none">›</span>
+    </div>
   );
 }
 

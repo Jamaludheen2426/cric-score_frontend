@@ -120,45 +120,52 @@ function BattingTable({ innings }: { innings: LiveScore['innings'][number] }) {
   return (
     <section className="card">
       <p className="eyebrow mb-2">Batting · {innings.battingTeam?.name}</p>
-      <div className="overflow-x-auto">
-        <table className="w-full text-[13px]">
-          <thead>
-            <tr className="border-b border-[var(--border-subtle)]">
-              <th className="table-head px-2 py-1.5 text-left">Batsman</th>
-              <th className="table-head px-2 py-1.5 text-left">Dismissal</th>
-              <th className="table-head px-2 py-1.5 text-right">R</th>
-              <th className="table-head px-2 py-1.5 text-right">B</th>
-              <th className="table-head px-2 py-1.5 text-right">4s</th>
-              <th className="table-head px-2 py-1.5 text-right">6s</th>
-              <th className="table-head px-2 py-1.5 text-right">SR</th>
-            </tr>
-          </thead>
-          <tbody>
-            {innings.battingCards!.sort((a, b) => a.batting_position - b.batting_position).map(card => {
-              const onStrike = card.player_id === innings.on_strike_batsman_id;
-              const sr = card.balls > 0 ? ((card.runs / card.balls) * 100).toFixed(1) : '—';
-              return (
-                <tr key={card.id} className="border-b border-[var(--border-subtle)] last:border-b-0">
-                  <td className="table-cell">
-                    {onStrike && <span className="mr-1 text-[var(--green-text)]">*</span>}
-                    <span className="font-semibold">{card.player?.name}</span>
-                  </td>
-                  <td className="table-cell text-[11px] text-[var(--text-muted)]">
+      <table className="w-full table-fixed text-[13px]">
+        <colgroup>
+          <col />
+          <col className="w-[44px]" />
+          <col className="w-[36px]" />
+          <col className="hidden w-[38px] sm:table-column" />
+          <col className="hidden w-[38px] sm:table-column" />
+          <col className="w-[52px]" />
+        </colgroup>
+        <thead>
+          <tr className="border-b border-[var(--border-subtle)]">
+            <th className="table-head px-1.5 py-1.5 text-left">Batsman</th>
+            <th className="table-head px-1 py-1.5 text-right">R</th>
+            <th className="table-head px-1 py-1.5 text-right">B</th>
+            <th className="table-head hidden px-1 py-1.5 text-right sm:table-cell">4s</th>
+            <th className="table-head hidden px-1 py-1.5 text-right sm:table-cell">6s</th>
+            <th className="table-head px-1 py-1.5 text-right">SR</th>
+          </tr>
+        </thead>
+        <tbody>
+          {innings.battingCards!.sort((a, b) => a.batting_position - b.batting_position).map(card => {
+            const onStrike = card.player_id === innings.on_strike_batsman_id;
+            const sr = card.balls > 0 ? Math.round((card.runs / card.balls) * 100).toString() : '—';
+            return (
+              <tr key={card.id} className="border-b border-[var(--border-subtle)] last:border-b-0">
+                <td className="table-cell px-1.5">
+                  <div className="flex items-baseline gap-1">
+                    {onStrike && <span className="text-[var(--green-text)]">*</span>}
+                    <span className="truncate font-semibold">{card.player?.name}</span>
+                  </div>
+                  <p className="truncate text-[11px] text-[var(--text-muted)]">
                     {card.is_out
                       ? <>{card.dismissal_type?.replace(/_/g, ' ')}{card.bowler && ` · b. ${card.bowler.name}`}</>
                       : <span className="text-[var(--text-secondary)]">not out</span>}
-                  </td>
-                  <td className="table-cell text-right font-bold">{card.runs}</td>
-                  <td className="table-cell text-right text-[var(--text-secondary)]">{card.balls}</td>
-                  <td className="table-cell text-right text-[var(--text-secondary)]">{card.fours}</td>
-                  <td className="table-cell text-right text-[var(--text-secondary)]">{card.sixes}</td>
-                  <td className="table-cell text-right text-[var(--text-secondary)]">{sr}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                  </p>
+                </td>
+                <td className="table-cell px-1 text-right font-bold">{card.runs}</td>
+                <td className="table-cell px-1 text-right text-[var(--text-secondary)]">{card.balls}</td>
+                <td className="table-cell hidden px-1 text-right text-[var(--text-secondary)] sm:table-cell">{card.fours}</td>
+                <td className="table-cell hidden px-1 text-right text-[var(--text-secondary)] sm:table-cell">{card.sixes}</td>
+                <td className="table-cell px-1 text-right text-[var(--text-secondary)]">{sr}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </section>
   );
 }
@@ -168,38 +175,45 @@ function BowlingTable({ innings }: { innings: LiveScore['innings'][number] }) {
   return (
     <section className="card">
       <p className="eyebrow mb-2">Bowling · {innings.bowlingTeam?.name}</p>
-      <div className="overflow-x-auto">
-        <table className="w-full text-[13px]">
-          <thead>
-            <tr className="border-b border-[var(--border-subtle)]">
-              <th className="table-head px-2 py-1.5 text-left">Bowler</th>
-              <th className="table-head px-2 py-1.5 text-right">O</th>
-              <th className="table-head px-2 py-1.5 text-right">R</th>
-              <th className="table-head px-2 py-1.5 text-right">W</th>
-              <th className="table-head px-2 py-1.5 text-right">Econ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {innings.bowlingCards!.map(card => {
-              const econ = card.legal_balls > 0 ? ((card.runs / card.legal_balls) * 6).toFixed(2) : '—';
-              const overs = card.overs != null ? Number(card.overs).toFixed(1) : '0.0';
-              const isCurrent = card.player_id === innings.current_bowler_id;
-              return (
-                <tr key={card.id} className="border-b border-[var(--border-subtle)] last:border-b-0">
-                  <td className="table-cell">
-                    {isCurrent && <span className="mr-1 text-[var(--green-text)]">●</span>}
-                    <span className="font-semibold">{card.player?.name}</span>
-                  </td>
-                  <td className="table-cell text-right">{overs}</td>
-                  <td className="table-cell text-right">{card.runs}</td>
-                  <td className="table-cell text-right font-bold" style={{ color: 'var(--green-text)' }}>{card.wickets}</td>
-                  <td className="table-cell text-right text-[var(--text-secondary)]">{econ}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <table className="w-full table-fixed text-[13px]">
+        <colgroup>
+          <col />
+          <col className="w-[44px]" />
+          <col className="w-[44px]" />
+          <col className="w-[36px]" />
+          <col className="w-[54px]" />
+        </colgroup>
+        <thead>
+          <tr className="border-b border-[var(--border-subtle)]">
+            <th className="table-head px-1.5 py-1.5 text-left">Bowler</th>
+            <th className="table-head px-1 py-1.5 text-right">O</th>
+            <th className="table-head px-1 py-1.5 text-right">R</th>
+            <th className="table-head px-1 py-1.5 text-right">W</th>
+            <th className="table-head px-1 py-1.5 text-right">Econ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {innings.bowlingCards!.map(card => {
+            const econ = card.legal_balls > 0 ? ((card.runs / card.legal_balls) * 6).toFixed(2) : '—';
+            const overs = card.overs != null ? Number(card.overs).toFixed(1) : '0.0';
+            const isCurrent = card.player_id === innings.current_bowler_id;
+            return (
+              <tr key={card.id} className="border-b border-[var(--border-subtle)] last:border-b-0">
+                <td className="table-cell px-1.5">
+                  <div className="flex items-baseline gap-1">
+                    {isCurrent && <span className="text-[var(--green-text)]">●</span>}
+                    <span className="truncate font-semibold">{card.player?.name}</span>
+                  </div>
+                </td>
+                <td className="table-cell px-1 text-right">{overs}</td>
+                <td className="table-cell px-1 text-right">{card.runs}</td>
+                <td className="table-cell px-1 text-right font-bold" style={{ color: 'var(--green-text)' }}>{card.wickets}</td>
+                <td className="table-cell px-1 text-right text-[var(--text-secondary)]">{econ}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </section>
   );
 }

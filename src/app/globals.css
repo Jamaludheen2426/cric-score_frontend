@@ -105,7 +105,22 @@
   .table-cell { padding: 8px 10px; font-size: 13px; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 
   .tabbar { display: flex; background: var(--bg-card); border-bottom: 1px solid var(--border); }
-  .tab-button { flex: 1; height: 42px; border-bottom: 2px solid transparent; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+  .tab-button {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 42px;
+    padding: 0 12px;
+    border-bottom: 2px solid transparent;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--text-muted);
+    transition: color .15s, border-color .15s;
+  }
+  .tab-button:hover { color: var(--text-secondary); }
   .tab-button-active { color: var(--text-primary); border-bottom-color: var(--green-bright); }
 
   .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live-dot); animation: live-pulse 1.5s ease-in-out infinite; display: inline-block; }
