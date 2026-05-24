@@ -2,6 +2,7 @@
 
 import { LiveScore, Match, BallRecord } from '@/types';
 import { formatOvers, formatRate, getBallLabel, getBallColor, getScoreDisplay } from '@/lib/utils';
+import { Narratives } from './Narratives';
 
 interface Props { liveData: LiveScore; match: Match; }
 
@@ -82,11 +83,12 @@ export function LiveScoreCard({ liveData, match }: Props) {
         </section>
       )}
 
-      {/* Live innings: batting + bowling cards */}
+      {/* Live innings: batting + bowling cards + narratives */}
       {current?.battingCards && <BattingTable innings={current} />}
       {current?.bowlingCards && <BowlingTable innings={current} />}
+      {current && <Narratives innings={current} />}
 
-      {/* Archived innings — both batting AND bowling */}
+      {/* Archived innings — both batting AND bowling AND narratives */}
       {completed.map(inn => (
         <div key={inn.id} className="space-y-3">
           <section className="card">
@@ -101,6 +103,7 @@ export function LiveScoreCard({ liveData, match }: Props) {
           </section>
           <BattingTable innings={inn} />
           <BowlingTable innings={inn} />
+          <Narratives innings={inn} />
         </div>
       ))}
 

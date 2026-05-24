@@ -73,10 +73,32 @@ export interface Innings {
   onStrike?: Player;
   battingCards?: BattingCard[];
   bowlingCards?: BowlingCard[];
+  partnerships?: Partnership[];
+  fallOfWickets?: FallOfWicket[];
   run_rate?: number | null;
   required_rate?: number | null;
   runs_needed?: number | null;
   balls_left?: number | null;
+}
+
+export interface Partnership {
+  wicket_number: number;     // 1 = opening (before 1st wicket)
+  batsman1_id: number | null;
+  batsman2_id: number | null;
+  batsman1_name: string;
+  batsman2_name: string;
+  runs: number;
+  balls: number;
+  ended: boolean;            // false = still in progress / current pair
+}
+
+export interface FallOfWicket {
+  wicket_number: number;
+  score: number;             // team total when wicket fell
+  overs: string;             // notation e.g. "4.3"
+  dismissed_player_id: number;
+  dismissed_player_name: string;
+  wicket_type: string | null;
 }
 
 export interface BattingCard {
