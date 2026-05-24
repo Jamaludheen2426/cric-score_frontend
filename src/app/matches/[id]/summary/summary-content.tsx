@@ -6,6 +6,7 @@ import { useMatch } from '@/lib/queries';
 import { matchesApi } from '@/lib/api';
 import { PageLoader } from '@/components/PageLoader';
 import { LiveScoreCard } from '@/components/LiveScoreCard';
+import { MatchAwards } from '@/components/MatchAwards';
 
 export function SummaryContent({ matchId }: { matchId: number }) {
   const { data: match, isLoading: matchLoading } = useMatch(matchId);
@@ -62,6 +63,7 @@ export function SummaryContent({ matchId }: { matchId: number }) {
             )}
           </section>
         )}
+        <MatchAwards liveData={liveData} />
         <LiveScoreCard liveData={liveData} match={match} />
       </div>
     </div>
