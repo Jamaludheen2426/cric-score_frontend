@@ -326,10 +326,12 @@ function BowlingTable({ innings }: { innings: LiveScore['innings'][number] }) {
       <table className="w-full table-fixed text-[13px]">
         <colgroup>
           <col />
-          <col className="w-[44px]" />
-          <col className="w-[44px]" />
-          <col className="w-[36px]" />
-          <col className="w-[54px]" />
+          <col className="w-[40px]" />
+          <col className="w-[40px]" />
+          <col className="w-[32px]" />
+          <col className="w-[32px]" />
+          <col className="w-[32px]" />
+          <col className="w-[48px]" />
         </colgroup>
         <thead>
           <tr className="border-b border-[var(--border-subtle)]">
@@ -337,6 +339,8 @@ function BowlingTable({ innings }: { innings: LiveScore['innings'][number] }) {
             <th className="table-head px-1 py-1.5 text-right">O</th>
             <th className="table-head px-1 py-1.5 text-right">R</th>
             <th className="table-head px-1 py-1.5 text-right">W</th>
+            <th className="table-head px-1 py-1.5 text-right">Wd</th>
+            <th className="table-head px-1 py-1.5 text-right">Nb</th>
             <th className="table-head px-1 py-1.5 text-right">Econ</th>
           </tr>
         </thead>
@@ -356,6 +360,8 @@ function BowlingTable({ innings }: { innings: LiveScore['innings'][number] }) {
                 <td className="table-cell px-1 text-right">{overs}</td>
                 <td className="table-cell px-1 text-right">{card.runs}</td>
                 <td className="table-cell px-1 text-right font-bold" style={{ color: 'var(--green-text)' }}>{card.wickets}</td>
+                <td className="table-cell px-1 text-right text-[var(--blue-text)]">{card.wides ?? 0}</td>
+                <td className="table-cell px-1 text-right text-[var(--orange-text)]">{card.noballs ?? 0}</td>
                 <td className="table-cell px-1 text-right text-[var(--text-secondary)]">{econ}</td>
               </tr>
             );

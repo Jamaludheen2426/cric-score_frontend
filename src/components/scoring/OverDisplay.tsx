@@ -15,10 +15,13 @@ export function OverDisplay({ balls, legalBalls }: Props) {
   const legalBallsList = balls.filter(b => !b.is_wide && !b.is_noball);
   const slots = Array(6).fill(null).map((_, i) => legalBallsList[i] || null);
   const extras = balls.filter(b => b.is_wide || b.is_noball);
+  const overRuns = balls.reduce((sum, b) => sum + b.runs + b.extras, 0);
 
   return (
     <section className="sticky top-[132px] z-30 flex h-12 items-center gap-2 overflow-x-auto border-b border-[var(--border-subtle)] bg-[#f8f9f5] px-3">
-      <span className="shrink-0 text-[11px] font-semibold text-[var(--text-secondary)]">This over</span>
+      <span className="shrink-0 text-[11px] font-semibold text-[var(--text-secondary)]">
+        This over <span className="text-[var(--text-primary)] font-bold ml-1 tabular-nums">{overRuns}r</span>
+      </span>
       {slots.map((ball, i) => ball ? (
         <span key={i} className={getBallColor(ball)}>{getBallLabel(ball)}</span>
       ) : (

@@ -1,9 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useMatches } from '@/lib/queries';
 import { PageLoader } from '@/components/PageLoader';
 import { Match } from '@/types';
+
+type StatusFilter = 'all' | 'live' | 'pending' | 'completed';
 
 function MatchRow({ match }: { match: Match }) {
   const isLive = match.status === 'live';
@@ -62,20 +65,75 @@ function Section({ title, rows }: { title: string; rows: Match[] }) {
 
 export function MatchesContent() {
   const { data: matches, isLoading } = useMatches();
+  const [query, setQuery]   = useState('');
+  const [status, setStatus] = useState<StatusFilter>('all');
+
   if (isLoading) return <PageLoader label="Loading matches" />;
 
-  const live      = (matches || []).filter((m: Match) => m.status === 'live');
-  const pending   = (matches || []).filter((m: Match) => m.status === 'pending');
-  const completed = (matches || []).filter((m: Match) => m.status === 'completed');
+  // Apply search (title or team names) + status filter
+  const q = query.trim().toLowerCase();
+  const filtered = (matches || []).filter((m: Match) => {
+    if (status !== 'all' && m.status !== status) return false;
+    if (!q) return true;
+    const hay = [m.title, m.teamA?.name, m.teamB?.name].filter(Boolean).join(' ').toLowerCase();
+    return hay.includes(q);
+  });
+
+  const live      = filtered.filter((m: Match) => m.status === 'live');
+  const pending   = filtered.filter((m: Match) => m.status === 'pending');
+  const completed = filtered.filter((m: Match) => m.status === 'completed');
+
+  const totalCount = matches?.length || 0;
+  const filteredCount = filtered.length;
 
   return (
     <div className="page">
-      {!matches?.length && (
+      {totalCount > 0 && (
+        <div className="mb-3 space-y-2">
+          <input
+            className="w-full rounded-md border border-[var(--border)] bg-[var(--bg-input)] px-3 py-2 text-[13px] outline-none focus:border-[var(--green)]"
+            placeholder="Search title or team…"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+          />
+          <div className="flex flex-wrap gap-1.5">
+            {([
+              ['all',       'All'],
+              ['live',      'Live'],
+              ['pending',   'Upcoming'],
+              ['completed', 'Completed'],
+            ] as [StatusFilter, string][]).map(([k, label]) => (
+              <button
+                key={k}
+                onClick={() => setStatus(k)}
+                className={`rounded-full border px-3 py-1 text-[12px] font-semibold transition-colors ${
+                  status === k
+                    ? 'border-[var(--green)] bg-[#edf7ee] text-[var(--green-text)]'
+                    : 'border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-secondary)]'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+            {(query || status !== 'all') && (
+              <span className="ml-auto self-center text-[11px] text-[var(--text-muted)]">
+                {filteredCount} of {totalCount}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {totalCount === 0 && (
         <div className="card text-center">
           <p className="text-[14px] font-bold text-[var(--text-primary)]">No matches yet.</p>
           <p className="mt-1 text-[12px] text-[var(--text-secondary)]">Start your first fixture to open the scoring desk.</p>
           <Link href="/matches/create" className="btn btn-primary mt-4 inline-flex">Create match</Link>
         </div>
+      )}
+
+      {totalCount > 0 && filteredCount === 0 && (
+        <div className="card text-center text-[13px] text-[var(--text-muted)]">No matches match that filter.</div>
       )}
 
       <Section title="Live now" rows={live} />

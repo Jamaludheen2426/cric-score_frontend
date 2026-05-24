@@ -100,10 +100,34 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
         </div>
         <div className="flex gap-1">
           {match.status === 'live' && currentInnings && (
-            <button onClick={() => setShowEndInningsModal(true)} className="btn btn-secondary btn-sm">End inn</button>
+            <button
+              onClick={() => {
+                if (confirm('End the current innings? This cannot be undone.')) setShowEndInningsModal(true);
+              }}
+              className="btn btn-secondary btn-sm"
+            >
+              End inn
+            </button>
           )}
           {match.share_token && (
-            <Link href={`/matches/${match.id}/live`} target="_blank" className="btn btn-secondary btn-sm">Public</Link>
+            <>
+              <button
+                onClick={async () => {
+                  const url = `${window.location.origin}/matches/${match.id}/live`;
+                  try {
+                    await navigator.clipboard.writeText(url);
+                    alert('Public link copied to clipboard');
+                  } catch {
+                    window.open(url, '_blank');
+                  }
+                }}
+                className="btn btn-secondary btn-sm"
+                title="Copy public scorecard link"
+              >
+                Share
+              </button>
+              <Link href={`/matches/${match.id}/live`} target="_blank" className="btn btn-secondary btn-sm">Public</Link>
+            </>
           )}
         </div>
       </header>

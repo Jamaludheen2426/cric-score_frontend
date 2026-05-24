@@ -127,6 +127,10 @@ export interface BowlingCard {
   wickets: number;
   extras: number;
   legal_balls: number;
+  /** Decorated by live.service from the ball log — count of wides this bowler conceded. */
+  wides?: number;
+  /** Decorated by live.service from the ball log — count of no-balls this bowler conceded. */
+  noballs?: number;
 }
 
 export interface CurrentOver {

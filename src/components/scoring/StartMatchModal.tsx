@@ -111,9 +111,25 @@ export function StartMatchModal({ match, onConfirm, onClose, isLoading }: Props)
               {tossFlipping
                 ? 'Flipping…'
                 : tossWinner
-                  ? `${teamNameOf(Number(tossWinner))} wins the toss (${tossSide})`
+                  ? `${teamNameOf(Number(tossWinner))} wins the toss`
                   : 'Tap a team and call heads or tails'}
             </p>
+
+            {pendingCall && (tossFlipping || tossWinner) && (
+              <p className="mb-3 text-center text-[12px] text-[var(--text-secondary)]">
+                <strong className="text-[var(--text-primary)]">{teamNameOf(pendingCall.teamId)}</strong>
+                {' called '}
+                <strong className="text-[var(--blue-text)] uppercase">{pendingCall.side}</strong>
+                {tossSide && (
+                  <>
+                    {' · landed '}
+                    <strong className={tossSide === pendingCall.side ? 'text-[var(--green-text)] uppercase' : 'text-[var(--red-text)] uppercase'}>
+                      {tossSide}
+                    </strong>
+                  </>
+                )}
+              </p>
+            )}
 
             {!tossWinner && !tossFlipping && (
               <div className="space-y-3">
