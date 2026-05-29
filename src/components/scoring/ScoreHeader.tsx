@@ -10,11 +10,12 @@ export function ScoreHeader({ liveData, match }: Props) {
   const done = liveData.innings.find(i => i.status === 'completed');
   if (!current) return null;
 
-  const isChase = current.innings_number === 2;
+  const isChase = current.target != null;
   const target = current.target ?? null;
   const need = target != null ? target - current.total_runs : null;
   const perOver = ballsPerOver(liveData.match || match);
-  const totalBalls = match.total_overs * perOver;
+  const inningsOversLimit = current.innings_number > 2 ? 1 : match.total_overs;
+  const totalBalls = inningsOversLimit * perOver;
   const ballsBowled = Math.floor(Number(current.total_overs_bowled)) * perOver
                     + Math.round((Number(current.total_overs_bowled) % 1) * 10);
   const ballsLeft = totalBalls - ballsBowled;
@@ -29,7 +30,7 @@ export function ScoreHeader({ liveData, match }: Props) {
           </p>
           <div className="mt-0.5 flex items-baseline gap-1.5">
             <span className="score-number">{current.total_runs}/{current.total_wickets}</span>
-            <span className="score-over">({formatOvers(current.total_overs_bowled)}/{match.total_overs})</span>
+            <span className="score-over">({formatOvers(current.total_overs_bowled)}/{inningsOversLimit})</span>
           </div>
         </div>
         {done && (

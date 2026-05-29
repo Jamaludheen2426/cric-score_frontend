@@ -16,16 +16,17 @@ function Pellet({ ball }: { ball: BallRecord }) {
 
 /** Plain-English one-liner describing the state of the match. */
 function statusSentence(current: Innings | undefined, match: Match, completed: Innings[], perOver: number, latestBall?: BallRecord | null): string {
-  if (match.status === 'completed') return getMatchResult(completed, match) || 'Match closed';
+  if (match.status === 'completed') return getSuperOverResult(completed) || getMatchResult(completed, match) || 'Match closed';
   if (!current) return 'Match not started';
   if (latestBall?.is_noball || (latestBall?.is_free_hit && (latestBall.is_wide || latestBall.is_noball))) return 'Free hit coming next ball';
-  if (current.innings_number === 2 && current.target != null) {
+  if (current.target != null) {
     const need = current.target - current.total_runs;
-    const totalBalls = match.total_overs * perOver;
+    const inningsOversLimit = current.innings_number > 2 ? 1 : match.total_overs;
+    const totalBalls = inningsOversLimit * perOver;
     const ballsBowled = Math.floor(Number(current.total_overs_bowled)) * perOver
                       + Math.round((Number(current.total_overs_bowled) % 1) * 10);
     const left = totalBalls - ballsBowled;
-    if (need <= 0) return `${current.battingTeam?.name} won the match`;
+    if (need <= 0) return `${current.battingTeam?.name} won ${current.innings_number > 2 ? 'the super over' : 'the match'}`;
     return `${current.battingTeam?.name} need ${need} from ${left} ball${left === 1 ? '' : 's'} to win`;
   }
   // Innings 1 sentence
@@ -43,11 +44,27 @@ function lastBallHeadline(b: BallRecord): { title: string; tone: 'wicket' | 'six
   return { title: `${b.runs} run${b.runs === 1 ? '' : 's'}`, tone: 'run' };
 }
 
+function getSuperOverResult(innings: Innings[]) {
+  const first = innings.find(i => i.innings_number === 3);
+  const second = innings.find(i => i.innings_number === 4);
+  if (!first || !second || second.status !== 'completed') return null;
+  if (first.total_runs === second.total_runs) return 'Super over tied';
+  if (second.total_runs > first.total_runs) {
+    return `${second.battingTeam?.name || 'Chasing team'} won the super over`;
+  }
+  return `${first.battingTeam?.name || 'Defending team'} won the super over`;
+}
+
 export function LiveScoreCard({ liveData, match }: Props) {
   const [scoreTab, setScoreTab] = useState<'batting' | 'bowling' | 'notes'>('batting');
   const current = liveData.innings.find(i => i.status === 'live');
   const completed = liveData.innings.filter(i => i.status === 'completed');
+  const regularCompleted = completed.filter(i => i.innings_number <= 2);
+  const superCompleted = completed.filter(i => i.innings_number > 2);
+  const superInnings = liveData.innings.filter(i => i.innings_number > 2);
+  const superResult = getSuperOverResult(liveData.innings);
   const perOver = ballsPerOver(liveData.match || match);
+  const currentOversLimit = current && current.innings_number > 2 ? 1 : match.total_overs;
 
   // Who's actually at the crease right now
   const striker     = current?.batsman1 && current.on_strike_batsman_id === current.batsman1.id ? current.batsman1
@@ -89,7 +106,7 @@ export function LiveScoreCard({ liveData, match }: Props) {
               </p>
               <div className="mt-1 flex items-baseline gap-2">
                 <span className="score-number">{current.total_runs}/{current.total_wickets}</span>
-                <span className="score-over">({formatOvers(current.total_overs_bowled)}/{match.total_overs})</span>
+                <span className="score-over">({formatOvers(current.total_overs_bowled)}/{currentOversLimit})</span>
               </div>
             </div>
             {completed[0] && (
@@ -105,7 +122,7 @@ export function LiveScoreCard({ liveData, match }: Props) {
 
           <div className="mt-2 flex flex-wrap items-center gap-3 border-t border-[var(--border-subtle)] pt-2 text-[12px] tabular-nums text-[var(--text-secondary)]">
             <span>CRR <strong className="text-[var(--text-primary)]">{current.run_rate != null ? formatRate(current.run_rate) : '–'}</strong></span>
-            {current.innings_number === 2 && current.target != null && (
+            {current.target != null && (
               <>
                 <span>·</span>
                 <span>Target <strong className="text-[var(--text-primary)]">{current.target}</strong></span>
@@ -122,14 +139,49 @@ export function LiveScoreCard({ liveData, match }: Props) {
         </section>
       )}
 
+      {superCompleted.length > 0 && (
+        <section className="card">
+          <div className="mb-3 grid grid-cols-1 border-b border-[var(--border-subtle)]">
+            <button className="h-9 border-b-2 border-[var(--green)] text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--text-primary)]">
+              Super over scorecard
+            </button>
+          </div>
+          {superCompleted.map(inn => (
+            <div key={inn.id} className="mb-3 space-y-3 last:mb-0">
+              <section className="rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2.5 py-2">
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="text-[13px] font-bold text-[var(--text-primary)]">
+                    {inn.battingTeam?.name} <span className="text-[11px] font-normal uppercase tracking-wide text-[var(--text-muted)]">· innings {inn.innings_number}</span>
+                  </p>
+                  <p className="text-[15px] font-bold tabular-nums">
+                    {getScoreDisplay(inn)} <span className="text-[12px] font-normal text-[var(--text-muted)]">({formatOvers(inn.total_overs_bowled)})</span>
+                  </p>
+                </div>
+              </section>
+              <BattingTable innings={inn} />
+              <BowlingTable innings={inn} ballsPerOver={perOver} />
+              <Narratives innings={inn} />
+            </div>
+          ))}
+        </section>
+      )}
+
       {match.status === 'completed' && (
         <section className="rounded-md border border-[var(--green)] bg-[#edf7ee] px-3 py-2 text-center">
-          <p className="text-[14px] font-bold text-[var(--green-text)]">{getMatchResult(liveData.innings, match) || 'Match closed'}</p>
+          <p className="text-[14px] font-bold text-[var(--green-text)]">{superResult || getMatchResult(liveData.innings, match) || 'Match closed'}</p>
+        </section>
+      )}
+      {superInnings.length > 0 && (
+        <section className="rounded-md border border-[var(--orange)] bg-[#fff7ed] px-3 py-2">
+          <p className="eyebrow mb-1" style={{ color: 'var(--orange-text)' }}>Super over</p>
+          <p className="text-[13px] font-bold text-[var(--orange-text)]">
+            {superResult || (current?.innings_number === 3 ? 'Super over in progress' : current?.innings_number === 4 ? 'Super-over chase in progress' : 'Super over scorecard')}
+          </p>
         </section>
       )}
 
       {current && <TeamComparison current={current} completed={completed[0]} />}
-      {current?.innings_number === 2 && <ChaseBlocks current={current} match={match} ballsPerOver={perOver} />}
+      {current?.target != null && <ChaseBlocks current={current} match={match} ballsPerOver={perOver} />}
 
       {current && <MatchAlerts liveData={liveData} />}
       {current && <SharePoster liveData={liveData} current={current} match={match} />}
@@ -245,7 +297,7 @@ export function LiveScoreCard({ liveData, match }: Props) {
       )}
 
       {/* Archived innings — both batting AND bowling AND narratives */}
-      {completed.map(inn => (
+      {regularCompleted.map(inn => (
         <div key={inn.id} className="space-y-3">
           <section className="card">
             <div className="flex items-baseline justify-between gap-3">
@@ -372,7 +424,7 @@ function ChaseBlocks({ current, match, ballsPerOver }: { current: Innings; match
           );
         })}
       </div>
-      <p className="mt-2 text-[11px] text-[var(--text-muted)]">Target {current.target} in {match.total_overs} overs.</p>
+      <p className="mt-2 text-[11px] text-[var(--text-muted)]">Target {current.target} in {current.innings_number > 2 ? 1 : match.total_overs} overs.</p>
     </section>
   );
 }
