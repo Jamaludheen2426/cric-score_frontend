@@ -33,7 +33,10 @@ interface Props {
 }
 
 export function MatchAlerts({ liveData, compact = false }: Props) {
-  const alerts = buildAlerts(liveData);
+  const alerts = buildAlerts(liveData).filter(alert => {
+    if (!compact) return true;
+    return !['live-leader', 'last-five-rate', 'projected-score'].includes(alert.key);
+  });
   if (alerts.length === 0) return null;
 
   return (

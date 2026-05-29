@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import { Player, WicketType } from '@/types';
 
@@ -18,6 +18,7 @@ const WICKET_TYPES: { value: WicketType; label: string }[] = [
 interface Props {
   batsmen: (Player | undefined)[];
   newBatsmenPool: Player[];
+  onStrikeId?: number;
   isNoBall?: boolean;
   onConfirm: (data: any) => void;
   onClose: () => void;
@@ -25,15 +26,37 @@ interface Props {
 
 const NO_BALL_WICKET_TYPES: WicketType[] = ['run_out', 'obstructing_field', 'retired_hurt', 'retired_out'];
 
-export function WicketModal({ batsmen, newBatsmenPool, isNoBall, onConfirm, onClose }: Props) {
+export function WicketModal({ batsmen, newBatsmenPool, onStrikeId, isNoBall, onConfirm, onClose }: Props) {
+  const activeBatsmen = useMemo(() => batsmen.filter(Boolean) as Player[], [batsmen]);
+  const striker = activeBatsmen.find(b => b.id === onStrikeId) || activeBatsmen[0];
   const [wicketType, setWicketType] = useState<WicketType>('bowled');
-  const [dismissedId, setDismissedId] = useState<number>(batsmen[0]?.id || 0);
+  const [dismissedId, setDismissedId] = useState<number>(striker?.id || 0);
   const [newBatsmanId, setNewBatsmanId] = useState('');
   const [nextStrikerId, setNextStrikerId] = useState('');
+  const allowsNonStrikerDismissal = wicketType === 'run_out' || wicketType === 'retired_hurt' || wicketType === 'retired_out';
+  const dismissedOptions = useMemo(
+    () => allowsNonStrikerDismissal ? activeBatsmen : activeBatsmen.filter(b => b.id === striker?.id),
+    [activeBatsmen, allowsNonStrikerDismissal, striker?.id]
+  );
+  const selectedNewBatsman = newBatsmenPool.find(p => String(p.id) === newBatsmanId);
+  const nextStrikerOptions = useMemo(
+    () => [
+      ...activeBatsmen.filter(b => b.id !== dismissedId),
+      selectedNewBatsman,
+    ].filter(Boolean) as Player[],
+    [activeBatsmen, dismissedId, selectedNewBatsman]
+  );
 
   useEffect(() => {
     if (isNoBall && !NO_BALL_WICKET_TYPES.includes(wicketType)) setWicketType('run_out');
   }, [isNoBall, wicketType]);
+
+  useEffect(() => {
+    if (!dismissedOptions.some(b => b.id === dismissedId)) {
+      setDismissedId(dismissedOptions[0]?.id || 0);
+    }
+    setNextStrikerId('');
+  }, [dismissedOptions, dismissedId]);
 
   return (
     <div className="fixed inset-0 z-[70] grid place-items-center bg-black/85 p-4">
@@ -52,7 +75,7 @@ export function WicketModal({ batsmen, newBatsmenPool, isNoBall, onConfirm, onCl
             })}
           </div>
           <select className="input" value={dismissedId} onChange={e => setDismissedId(Number(e.target.value))}>
-            {batsmen.filter(Boolean).map(b => <option key={b!.id} value={b!.id}>{b!.name}</option>)}
+            {dismissedOptions.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
           {newBatsmenPool.length > 0 && (
             <select className="input" value={newBatsmanId} onChange={e => setNewBatsmanId(e.target.value)}>
@@ -63,13 +86,12 @@ export function WicketModal({ batsmen, newBatsmenPool, isNoBall, onConfirm, onCl
           {(wicketType === 'run_out' || wicketType === 'retired_hurt') && newBatsmanId && (
             <select className="input" value={nextStrikerId} onChange={e => setNextStrikerId(e.target.value)}>
               <option value="">Who faces next ball?</option>
-              {[...batsmen.filter(Boolean), newBatsmenPool.find(p => String(p.id) === newBatsmanId)]
-                .filter(Boolean)
-                .map(p => <option key={p!.id} value={p!.id}>{p!.name}</option>)}
+              {nextStrikerOptions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           )}
           <button onClick={() => {
             if (newBatsmenPool.length > 0 && !newBatsmanId) return alert('Select next batsman');
+            if ((wicketType === 'run_out' || wicketType === 'retired_hurt') && newBatsmanId && !nextStrikerId) return alert('Select who faces next ball');
             onConfirm({
               is_wicket: true,
               wicket_type: wicketType,

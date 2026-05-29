@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { ChevronLeft, ExternalLink, Flag, Monitor, Share2, SlidersHorizontal } from 'lucide-react';
 import { useMatch, useScoringActions, useLiveScore } from '@/lib/queries';
 import { PageLoader } from '@/components/PageLoader';
 import { PinGate } from '@/components/scoring/PinGate';
@@ -63,7 +64,6 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
   const [correctionMode, setCorrectionMode] = useState<'batter' | 'bowler' | null>(null);
   const [dangerAction, setDangerAction] = useState<'endInnings' | 'endMatch' | null>(null);
   const [showAudit, setShowAudit] = useState(false);
-  const [quickUndo, setQuickUndo] = useState(false);
   const [pendingBall, setPendingBall] = useState<PendingBall>({ runs: 0 });
   const [liveData, setLiveData] = useState<LiveScore | null>(null);
 
@@ -101,8 +101,6 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
 
   const handleBall = (data: any) => {
     const afterBall = (res: any) => {
-      setQuickUndo(true);
-      window.setTimeout(() => setQuickUndo(false), 5000);
       if (res?.allOut || res?.oversFinished || res?.targetReached) return;
       if ((currentOver?.legal_balls || 0) + 1 >= perOver && !data.is_wide && !data.is_noball) {
         setShowBowlerModal(true);
@@ -120,8 +118,6 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
     setShowWicketModal(false);
     addBall.mutate({ ...wicketData, runs: pendingBall.runs, is_wide: pendingBall.is_wide, is_noball: pendingBall.is_noball, extra_type: pendingBall.extra_type }, {
       onSuccess: (res: any) => {
-        setQuickUndo(true);
-        window.setTimeout(() => setQuickUndo(false), 5000);
         if (res?.allOut || res?.oversFinished || res?.targetReached) return;
         if ((currentOver?.legal_balls || 0) + 1 >= perOver && !pendingBall.is_wide && !pendingBall.is_noball) {
           setShowBowlerModal(true);
@@ -145,21 +141,27 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
   return (
     <div className="app-shell pb-[200px]">
       {/* Match header */}
-      <header className="sticky top-12 z-30 flex h-12 items-center justify-between border-b border-[var(--border)] bg-[var(--bg-card)] px-3">
-        <Link href="/matches" className="text-[13px] font-semibold text-[var(--blue-text)]">Back</Link>
-        <div className="min-w-0 text-center">
+      <header className="sticky top-12 z-30 flex h-12 items-center gap-2 border-b border-[var(--border)] bg-[var(--bg-card)] px-2 sm:px-3">
+        <Link href="/matches" className="btn btn-secondary btn-sm h-8 w-8 shrink-0 px-0 sm:w-auto sm:px-3" aria-label="Back to matches">
+          <ChevronLeft size={16} />
+          <span className="hidden sm:inline">Back</span>
+        </Link>
+        <div className="min-w-0 flex-1 text-center">
           <h1 className="truncate text-[14px] font-bold uppercase text-[var(--text-primary)]">{match.title}</h1>
           <p className="text-[11px] text-[var(--text-secondary)]">{match.teamA?.name} <span className="text-[var(--text-muted)]">v</span> {match.teamB?.name}</p>
         </div>
-        <div className="flex gap-1">
+        <div className="flex max-w-[58vw] shrink-0 justify-end gap-1 overflow-x-auto sm:max-w-none">
           {match.status === 'live' && currentInnings && (
             <button
               onClick={() => {
                 setDangerAction('endInnings');
               }}
-              className="btn btn-secondary btn-sm"
+              className="btn btn-secondary btn-sm h-8 w-8 shrink-0 px-0 sm:w-auto sm:px-3"
+              aria-label="End innings"
+              title="End innings"
             >
-              End inn
+              <Flag size={14} />
+              <span className="hidden sm:inline">End inn</span>
             </button>
           )}
           {match.share_token && (
@@ -174,14 +176,25 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
                     window.open(url, '_blank');
                   }
                 }}
-                className="btn btn-secondary btn-sm"
+                className="btn btn-secondary btn-sm h-8 w-8 shrink-0 px-0 sm:w-auto sm:px-3"
+                aria-label="Copy public scorecard link"
                 title="Copy public scorecard link"
               >
-                Share
+                <Share2 size={14} />
+                <span className="hidden sm:inline">Share</span>
               </button>
-              <Link href={`/matches/${match.id}/live`} target="_blank" className="btn btn-secondary btn-sm">Public</Link>
-              <Link href={`/matches/${match.id}/tv`} target="_blank" className="btn btn-secondary btn-sm">TV</Link>
-              <Link href={`/matches/${match.id}/operator`} target="_blank" className="btn btn-secondary btn-sm">Ops</Link>
+              <Link href={`/matches/${match.id}/live`} target="_blank" className="btn btn-secondary btn-sm h-8 w-8 shrink-0 px-0 sm:w-auto sm:px-3" aria-label="Open public scorecard" title="Public scorecard">
+                <ExternalLink size={14} />
+                <span className="hidden sm:inline">Public</span>
+              </Link>
+              <Link href={`/matches/${match.id}/tv`} target="_blank" className="btn btn-secondary btn-sm h-8 w-8 shrink-0 px-0 sm:w-auto sm:px-3" aria-label="Open TV mode" title="TV mode">
+                <Monitor size={14} />
+                <span className="hidden sm:inline">TV</span>
+              </Link>
+              <Link href={`/matches/${match.id}/operator`} target="_blank" className="btn btn-secondary btn-sm h-8 w-8 shrink-0 px-0 sm:w-auto sm:px-3" aria-label="Open operator mode" title="Operator mode">
+                <SlidersHorizontal size={14} />
+                <span className="hidden sm:inline">Ops</span>
+              </Link>
             </>
           )}
         </div>
@@ -273,12 +286,6 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
             </div>
           ) : (
             <>
-            {quickUndo && (
-              <div className="fixed bottom-[202px] left-3 right-3 z-[55] mx-auto flex max-w-[420px] items-center justify-between rounded-md border border-[var(--green)] bg-[#edf7ee] px-3 py-2 text-[12px] shadow-lg">
-                <span className="font-bold text-[var(--green-text)]">Ball saved</span>
-                <button onClick={() => { setQuickUndo(false); undoBall.mutate(); }} className="btn btn-secondary btn-sm">Undo now</button>
-              </div>
-            )}
             <BallInputPanel
               onBall={handleBall}
               onUndo={() => undoBall.mutate()}
@@ -367,6 +374,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
       {showWicketModal && (
         <WicketModal
           batsmen={[currentInnings?.batsman1, currentInnings?.batsman2].filter(Boolean)}
+          onStrikeId={currentInnings?.on_strike_batsman_id}
           isNoBall={pendingBall.is_noball}
           newBatsmenPool={battingTeamPlayers.filter(
             (p: Player) =>

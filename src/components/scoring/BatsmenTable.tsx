@@ -1,7 +1,7 @@
 'use client';
 
-import { Club as BatIcon } from 'lucide-react';
 import { Innings } from '@/types';
+import { CricketBatIcon } from '@/components/icons/CricketBatIcon';
 
 interface Props {
   innings: Innings;
@@ -28,7 +28,7 @@ export function BatsmenTable({ innings }: Props) {
             }`}
           >
             <span className="grid w-4 place-items-center text-[var(--green-text)]">
-              {onStrike ? <BatIcon size={14} strokeWidth={2.4} aria-label="On strike" /> : null}
+              {onStrike ? <CricketBatIcon size={16} strokeWidth={1.9} aria-label="On strike" /> : null}
             </span>
             <span className={`min-w-0 flex-1 truncate text-[14px] ${onStrike ? 'font-bold text-[var(--text-primary)]' : 'font-semibold text-[var(--text-secondary)]'}`}>{b.name}</span>
             <span className="w-12 text-right text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">{runs}{onStrike ? '*' : ''}</span>

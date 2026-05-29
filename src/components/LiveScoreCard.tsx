@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { Club as BatIcon, Share2 } from 'lucide-react';
+import { Share2 } from 'lucide-react';
 import { LiveScore, Match, BallRecord, Innings } from '@/types';
 import { ballsPerOver, formatOvers, formatRate, getBallLabel, getBallColor, getScoreDisplay } from '@/lib/utils';
 import { Narratives } from './Narratives';
 import { MatchAlerts } from './MatchAlerts';
+import { CricketBatIcon } from './icons/CricketBatIcon';
 
 interface Props { liveData: LiveScore; match: Match; }
 
@@ -137,7 +138,7 @@ export function LiveScoreCard({ liveData, match }: Props) {
                 name={striker.name}
                 line={strikerCard ? `${strikerCard.runs}${strikerCard.is_out ? '' : '*'} (${strikerCard.balls}b)` : '0* (0b)'}
                 accent
-                icon={<BatIcon size={14} strokeWidth={2.4} aria-hidden />}
+                icon={<CricketBatIcon size={16} strokeWidth={1.9} />}
               />
             )}
             {nonStriker && (
@@ -613,7 +614,7 @@ function BattingTable({ innings, framed = true }: { innings: LiveScore['innings'
               <tr key={card.id} className={`border-b border-[var(--border-subtle)] last:border-b-0 ${onStrike ? 'bg-[#f6fbf1]' : ''}`}>
                 <td className={`table-cell px-1.5 ${onStrike ? 'border-l-[3px] border-l-[var(--green)]' : ''}`}>
                   <div className="flex items-baseline gap-1">
-                    {onStrike && <BatIcon size={13} strokeWidth={2.4} className="shrink-0 text-[var(--green-text)]" aria-label="On strike" />}
+                    {onStrike && <CricketBatIcon size={15} strokeWidth={1.9} className="shrink-0 text-[var(--green-text)]" aria-label="On strike" />}
                     <span className="truncate font-semibold">{card.player?.name}</span>
                   </div>
                   <p className="truncate text-[11px] text-[var(--text-muted)]">
