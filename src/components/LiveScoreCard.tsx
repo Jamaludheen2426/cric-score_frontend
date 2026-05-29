@@ -40,6 +40,7 @@ function statusSentence(current: Innings | undefined, match: Match, completed: I
   }
   if (latestBall?.is_noball || (latestBall?.is_free_hit && (latestBall.is_wide || latestBall.is_noball))) return 'Free hit coming next ball';
   // Innings 1 sentence
+  if (current.innings_number > 2) return `${current.battingTeam?.name} batting in SO ${superOverNumber(current.innings_number)}`;
   return `${current.battingTeam?.name} batting · over ${Math.floor(Number(current.total_overs_bowled)) + 1} of ${match.total_overs}`;
 }
 
@@ -54,25 +55,78 @@ function lastBallHeadline(b: BallRecord): { title: string; tone: 'wicket' | 'six
   return { title: `${b.runs} run${b.runs === 1 ? '' : 's'}`, tone: 'run' };
 }
 
+function superOverNumber(inningsNumber: number) {
+  return Math.floor((inningsNumber - 3) / 2) + 1;
+}
+
 function getSuperOverResult(innings: Innings[]) {
-  const first = innings.find(i => i.innings_number === 3);
-  const second = innings.find(i => i.innings_number === 4);
-  if (!first || !second || second.status !== 'completed') return null;
-  if (first.total_runs === second.total_runs) return 'Super over tied';
-  if (second.total_runs > first.total_runs) {
-    return `${second.battingTeam?.name || 'Chasing team'} won the super over`;
+  const completedPairs = innings
+    .filter(i => i.innings_number > 2 && i.innings_number % 2 === 0)
+    .sort((a, b) => b.innings_number - a.innings_number);
+
+  for (const second of completedPairs) {
+    const first = innings.find(i => i.innings_number === second.innings_number - 1);
+    if (!first || second.status !== 'completed') continue;
+    const label = `SO ${superOverNumber(second.innings_number)}`;
+    if (first.total_runs === second.total_runs) return `${label} tied`;
+    if (second.total_runs > first.total_runs) {
+      return `${second.battingTeam?.name || 'Chasing team'} won in ${label}`;
+    }
+    return `${first.battingTeam?.name || 'Defending team'} won in ${label}`;
   }
-  return `${first.battingTeam?.name || 'Defending team'} won the super over`;
+
+  return null;
+}
+
+function getSuperOverBanner(innings: Innings[], current?: Innings) {
+  if (current?.innings_number && current.innings_number > 2) {
+    const label = `SO ${superOverNumber(current.innings_number)}`;
+    return current.innings_number % 2 === 1 ? `${label} in progress` : `${label} chase in progress`;
+  }
+  return getSuperOverResult(innings);
+}
+
+type ScorecardTab = { id: string; label: string; innings: Innings[] };
+
+function buildScorecardTabs(innings: Innings[]): ScorecardTab[] {
+  const tabs: ScorecardTab[] = innings
+    .filter(inn => inn.innings_number <= 2)
+    .sort((a, b) => a.innings_number - b.innings_number)
+    .map(inn => ({ id: `inn-${inn.innings_number}`, label: `Inn ${inn.innings_number}`, innings: [inn] }));
+
+  const superGroups = new Map<number, Innings[]>();
+  innings
+    .filter(inn => inn.innings_number > 2)
+    .forEach(inn => {
+      const group = superOverNumber(inn.innings_number);
+      const rows = superGroups.get(group) || [];
+      rows.push(inn);
+      superGroups.set(group, rows);
+    });
+
+  Array.from(superGroups.entries())
+    .sort(([a], [b]) => a - b)
+    .forEach(([group, rows]) => {
+      tabs.push({
+        id: `so-${group}`,
+        label: `SO ${group}`,
+        innings: rows.sort((a, b) => a.innings_number - b.innings_number),
+      });
+    });
+
+  return tabs;
 }
 
 export function LiveScoreCard({ liveData, match }: Props) {
   const [scoreTab, setScoreTab] = useState<'batting' | 'bowling' | 'notes'>('batting');
+  const [scorecardTab, setScorecardTab] = useState('');
   const current = liveData.innings.find(i => i.status === 'live');
   const completed = liveData.innings.filter(i => i.status === 'completed');
-  const regularCompleted = completed.filter(i => i.innings_number <= 2);
-  const superCompleted = completed.filter(i => i.innings_number > 2);
   const superInnings = liveData.innings.filter(i => i.innings_number > 2);
   const superResult = getSuperOverResult(liveData.innings);
+  const superBanner = getSuperOverBanner(liveData.innings, current);
+  const scorecardTabs = buildScorecardTabs(liveData.innings);
+  const activeScorecardTab = scorecardTabs.find(tab => tab.id === scorecardTab)?.id || scorecardTabs[0]?.id || '';
   const perOver = ballsPerOver(liveData.match || match);
   const currentOversLimit = current && current.innings_number > 2 ? 1 : match.total_overs;
 
@@ -149,33 +203,6 @@ export function LiveScoreCard({ liveData, match }: Props) {
         </section>
       )}
 
-      {superCompleted.length > 0 && (
-        <section className="card">
-          <div className="mb-3 grid grid-cols-1 border-b border-[var(--border-subtle)]">
-            <button className="h-9 border-b-2 border-[var(--green)] text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--text-primary)]">
-              Super over scorecard
-            </button>
-          </div>
-          {superCompleted.map(inn => (
-            <div key={inn.id} className="mb-3 space-y-3 last:mb-0">
-              <section className="rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2.5 py-2">
-                <div className="flex items-baseline justify-between gap-3">
-                  <p className="text-[13px] font-bold text-[var(--text-primary)]">
-                    {inn.battingTeam?.name} <span className="text-[11px] font-normal uppercase tracking-wide text-[var(--text-muted)]">· innings {inn.innings_number}</span>
-                  </p>
-                  <p className="text-[15px] font-bold tabular-nums">
-                    {getScoreDisplay(inn)} <span className="text-[12px] font-normal text-[var(--text-muted)]">({formatOvers(inn.total_overs_bowled)})</span>
-                  </p>
-                </div>
-              </section>
-              <BattingTable innings={inn} />
-              <BowlingTable innings={inn} ballsPerOver={perOver} />
-              <Narratives innings={inn} />
-            </div>
-          ))}
-        </section>
-      )}
-
       {match.status === 'completed' && (
         <section className="rounded-md border border-[var(--green)] bg-[#edf7ee] px-3 py-2 text-center">
           <p className="text-[14px] font-bold text-[var(--green-text)]">{superResult || getMatchResult(liveData.innings, match) || 'Match closed'}</p>
@@ -185,7 +212,7 @@ export function LiveScoreCard({ liveData, match }: Props) {
         <section className="rounded-md border border-[var(--orange)] bg-[#fff7ed] px-3 py-2">
           <p className="eyebrow mb-1" style={{ color: 'var(--orange-text)' }}>Super over</p>
           <p className="text-[13px] font-bold text-[var(--orange-text)]">
-            {superResult || (current?.innings_number === 3 ? 'Super over in progress' : current?.innings_number === 4 ? 'Super-over chase in progress' : 'Super over scorecard')}
+            {superBanner || 'Super over scorecard'}
           </p>
         </section>
       )}
@@ -307,23 +334,14 @@ export function LiveScoreCard({ liveData, match }: Props) {
       )}
 
       {/* Archived innings — both batting AND bowling AND narratives */}
-      {regularCompleted.map(inn => (
-        <div key={inn.id} className="space-y-3">
-          <section className="card">
-            <div className="flex items-baseline justify-between gap-3">
-              <p className="text-[13px] font-bold text-[var(--text-primary)]">
-                {inn.battingTeam?.name} <span className="text-[11px] font-normal uppercase tracking-wide text-[var(--text-muted)]">· archived</span>
-              </p>
-              <p className="text-[15px] font-bold tabular-nums">
-                {getScoreDisplay(inn)} <span className="text-[12px] font-normal text-[var(--text-muted)]">({formatOvers(inn.total_overs_bowled)})</span>
-              </p>
-            </div>
-          </section>
-          <BattingTable innings={inn} />
-          <BowlingTable innings={inn} ballsPerOver={perOver} />
-          <Narratives innings={inn} />
-        </div>
-      ))}
+      {scorecardTabs.length > 0 && (
+        <ScorecardTabs
+          tabs={scorecardTabs}
+          activeTabId={activeScorecardTab}
+          onSelect={setScorecardTab}
+          ballsPerOver={perOver}
+        />
+      )}
 
       {match.status === 'completed' && (
         <section className="card text-center">
@@ -333,6 +351,59 @@ export function LiveScoreCard({ liveData, match }: Props) {
         </section>
       )}
     </div>
+  );
+}
+
+function ScorecardTabs({ tabs, activeTabId, onSelect, ballsPerOver }: {
+  tabs: ScorecardTab[];
+  activeTabId: string;
+  onSelect: (tabId: string) => void;
+  ballsPerOver: number;
+}) {
+  const active = tabs.find(tab => tab.id === activeTabId) || tabs[0];
+  if (!active) return null;
+
+  return (
+    <section className="card">
+      <p className="eyebrow mb-2">Full scorecard</p>
+      <div className="mb-3 flex gap-1 overflow-x-auto border-b border-[var(--border-subtle)]">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => onSelect(tab.id)}
+            className={`h-9 shrink-0 border-b-2 px-3 text-[11px] font-bold uppercase tracking-[0.05em] ${
+              active.id === tab.id
+                ? 'border-[var(--green)] text-[var(--text-primary)]'
+                : 'border-transparent text-[var(--text-muted)]'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <div className="space-y-3">
+        {active.innings.map(inn => (
+          <div key={inn.id} className="space-y-3">
+            <section className="rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2.5 py-2">
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="min-w-0 truncate text-[13px] font-bold text-[var(--text-primary)]">
+                  {inn.battingTeam?.name}
+                  <span className="ml-1 text-[11px] font-normal uppercase tracking-wide text-[var(--text-muted)]">
+                    {inn.innings_number > 2 ? `SO ${superOverNumber(inn.innings_number)}` : `Inn ${inn.innings_number}`}
+                  </span>
+                </p>
+                <p className="shrink-0 text-[15px] font-bold tabular-nums">
+                  {getScoreDisplay(inn)} <span className="text-[12px] font-normal text-[var(--text-muted)]">({formatOvers(inn.total_overs_bowled)})</span>
+                </p>
+              </div>
+            </section>
+            <BattingTable innings={inn} />
+            <BowlingTable innings={inn} ballsPerOver={ballsPerOver} />
+            <Narratives innings={inn} />
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 

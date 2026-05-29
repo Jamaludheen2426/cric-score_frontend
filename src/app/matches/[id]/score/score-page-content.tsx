@@ -56,6 +56,10 @@ function safeJson(value: string) {
   try { return JSON.parse(value); } catch { return null; }
 }
 
+function superOverNumber(inningsNumber: number) {
+  return Math.floor((inningsNumber - 3) / 2) + 1;
+}
+
 function LastBallReview({ ball, canUndo, onEdit, isLoading }: {
   ball?: BallRecord;
   canUndo: boolean;
@@ -264,8 +268,6 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
   };
   const firstDone = liveData?.innings?.find(i => i.innings_number === 1);
   const secondDone = liveData?.innings?.find(i => i.innings_number === 2);
-  const tiedAfterSecond = Boolean(firstDone && secondDone && firstDone.total_runs === secondDone.total_runs);
-  const needsNextInnings = (liveData?.innings?.length ?? 0) < 2 || (tiedAfterSecond && (liveData?.innings?.length ?? 0) < 4);
   const currentInningsOversLimit = currentInnings?.innings_number && currentInnings.innings_number > 2 ? 1 : match.total_overs;
   const currentBallsBowled = currentInnings
     ? Math.floor(Number(currentInnings.total_overs_bowled)) * perOver
@@ -279,6 +281,53 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
     currentBallsLeft === 0 &&
     currentInnings.total_runs < currentInnings.target
   );
+  const inningsForFlow = finishedLiveChase
+    ? currentInnings
+    : liveData?.innings?.[liveData.innings.length - 1];
+  const previousForFlow = inningsForFlow
+    ? liveData?.innings?.find(i => i.innings_number === inningsForFlow.innings_number - 1)
+    : undefined;
+  const tiedLatestPair = Boolean(
+    inningsForFlow &&
+    inningsForFlow.innings_number % 2 === 0 &&
+    previousForFlow &&
+    previousForFlow.total_runs === inningsForFlow.total_runs
+  );
+  const needsNextInnings = Boolean(
+    inningsForFlow &&
+    (
+      inningsForFlow.innings_number === 1 ||
+      (inningsForFlow.innings_number > 2 && inningsForFlow.innings_number % 2 === 1) ||
+      tiedLatestPair
+    )
+  );
+  const closedTitle = !inningsForFlow
+    ? 'Innings closed.'
+    : inningsForFlow.innings_number === 1
+      ? 'Time for the chase.'
+      : tiedLatestPair
+        ? inningsForFlow.innings_number === 2
+          ? 'Scores level. Super over needed.'
+          : `SO ${superOverNumber(inningsForFlow.innings_number)} tied. Another super over needed.`
+        : inningsForFlow.innings_number > 2 && inningsForFlow.innings_number % 2 === 1
+          ? `SO ${superOverNumber(inningsForFlow.innings_number)} target set.`
+          : 'Both teams have batted.';
+  const closedHelp = !inningsForFlow
+    ? ''
+    : inningsForFlow.innings_number === 1
+      ? 'Set up the openers for the second innings.'
+      : tiedLatestPair
+        ? inningsForFlow.innings_number === 2
+          ? 'Set up the first super-over batting side.'
+          : `Set up SO ${superOverNumber(inningsForFlow.innings_number) + 1}.`
+        : inningsForFlow.innings_number > 2 && inningsForFlow.innings_number % 2 === 1
+          ? 'Set up the chase for this super over.'
+          : 'Close the match to file the final scorecard.';
+  const nextInningsButtonLabel = inningsForFlow?.innings_number === 1
+    ? 'Open 2nd innings'
+    : inningsForFlow && inningsForFlow.innings_number > 2 && inningsForFlow.innings_number % 2 === 1
+      ? 'Open super-over chase'
+      : 'Open super over';
 
   return (
     <div className="app-shell pb-[360px] sm:pb-[300px]">
@@ -484,18 +533,14 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
             <section className="card text-center">
               <p className="eyebrow mb-2">Innings Closed</p>
               <p className="text-[14px] font-bold">
-                {(liveData?.innings?.length ?? 0) < 2 ? 'Time for the chase.' : tiedAfterSecond && (liveData?.innings?.length ?? 0) < 4 ? 'Scores level. Super over needed.' : 'Both teams have batted.'}
+                {closedTitle}
               </p>
               <p className="mt-1 text-[12px] text-[var(--text-secondary)]">
-                {(liveData?.innings?.length ?? 0) < 2
-                  ? 'Set up the openers for the second innings.'
-                  : tiedAfterSecond && (liveData?.innings?.length ?? 0) < 4
-                    ? ((liveData?.innings?.length ?? 0) === 2 ? 'Set up the first super-over batting side.' : 'Set up the chase for the super over.')
-                  : 'Close the match to file the final scorecard.'}
+                {closedHelp}
               </p>
               {needsNextInnings ? (
                 <button onClick={() => setShowEndInningsModal(true)} className="btn btn-primary mt-4">
-                  {(liveData?.innings?.length ?? 0) < 2 ? 'Open 2nd innings' : 'Open super over'}
+                  {nextInningsButtonLabel}
                 </button>
               ) : (
                 <button onClick={() => endMatch.mutate()} disabled={endMatch.isPending} className="btn btn-primary mt-4">

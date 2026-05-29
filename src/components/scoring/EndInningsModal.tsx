@@ -19,12 +19,17 @@ export function EndInningsModal({ teams, currentInnings, onConfirm, onClose, isL
   const newBattingTeam = currentInnings.bowling_team_id === teams.teamA.id ? teams.teamA : teams.teamB;
   const newBowlingTeam = currentInnings.batting_team_id === teams.teamA.id ? teams.teamA : teams.teamB;
   const target = (currentInnings.total_runs || 0) + 1;
-  const startsFirstSuperOver = currentInnings.innings_number === 2;
-  const startsSuperChase = currentInnings.innings_number === 3;
-  const title = startsFirstSuperOver
-    ? `${newBattingTeam.name} start super over`
+  const startsFirstSuperOver = currentInnings.innings_number >= 2 && currentInnings.innings_number % 2 === 0;
+  const startsSuperChase = currentInnings.innings_number > 2 && currentInnings.innings_number % 2 === 1;
+  const nextSuperOverNumber = startsFirstSuperOver
+    ? currentInnings.innings_number / 2
     : startsSuperChase
-      ? `${newBattingTeam.name} chase ${target} in super over`
+      ? (currentInnings.innings_number - 1) / 2
+      : null;
+  const title = startsFirstSuperOver
+    ? `${newBattingTeam.name} start SO ${nextSuperOverNumber}`
+    : startsSuperChase
+      ? `${newBattingTeam.name} chase ${target} in SO ${nextSuperOverNumber}`
       : `${newBattingTeam.name} chase ${target}`;
   const canSubmit = batsman1 && batsman2 && bowler && batsman1 !== batsman2;
 
