@@ -55,7 +55,12 @@ function buildTable(teams: Team[], matches: Match[]) {
   });
 
   return Array.from(rows.values())
-    .map(row => ({ ...row, nrr: row.bf && row.ba ? (row.rf / row.bf) * 6 - (row.ra / row.ba) * 6 : 0 }))
+    .map(row => ({
+      ...row,
+      forRate: row.bf ? (row.rf / row.bf) * 6 : 0,
+      againstRate: row.ba ? (row.ra / row.ba) * 6 : 0,
+      nrr: row.bf && row.ba ? (row.rf / row.bf) * 6 - (row.ra / row.ba) * 6 : 0,
+    }))
     .sort((a, b) => b.pts - a.pts || b.nrr - a.nrr || b.w - a.w);
 }
 
@@ -131,6 +136,18 @@ export function TournamentDetailContent({ tournamentId }: { tournamentId: number
               <span className="text-right text-[13px]">{row.l}</span>
               <span className="text-right text-[13px] font-bold">{row.pts}</span>
               <span className="text-right text-[13px]">{row.nrr.toFixed(2)}</span>
+            </div>
+          ))}
+        </section>
+
+        <section className="mb-3 border border-[var(--border-subtle)] bg-[var(--bg-card)]">
+          <h2 className="border-b border-[var(--border-subtle)] px-3 py-2 text-[16px] font-bold text-[var(--text-primary)]">NRR detail</h2>
+          {table.map(row => (
+            <div key={row.team.id} className="grid gap-1 border-b border-[var(--border-subtle)] px-3 py-2 text-[12px] last:border-b-0 sm:grid-cols-[1fr_120px_120px_80px]">
+              <span className="font-bold text-[var(--text-primary)]">{row.team.name}</span>
+              <span className="text-[var(--text-secondary)]">For {row.rf}/{row.bf}b = {row.forRate.toFixed(2)}</span>
+              <span className="text-[var(--text-secondary)]">Against {row.ra}/{row.ba}b = {row.againstRate.toFixed(2)}</span>
+              <span className="font-bold tabular-nums text-[var(--green-text)]">{row.nrr.toFixed(3)}</span>
             </div>
           ))}
         </section>

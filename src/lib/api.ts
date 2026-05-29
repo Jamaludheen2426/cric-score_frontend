@@ -30,8 +30,8 @@ export const matchesApi = {
   list: () => api.get('/matches').then(r => r.data.data),
   get: (id: number) => api.get(`/matches/${id}`).then(r => r.data.data),
   create: (data: any) => api.post('/matches', data).then(r => r.data.data),
-  verifyPin: (id: number, pin: string) =>
-    api.post(`/matches/${id}/verify-pin`, { pin }).then(r => r.data.data),
+  verifyPin: (id: number, pin: string, force?: boolean) =>
+    api.post(`/matches/${id}/verify-pin`, { pin, force }).then(r => r.data.data),
   liveScore: (shareToken: string) =>
     api.get(`/matches/live/${shareToken}`).then(r => r.data.data),
 };
@@ -65,6 +65,9 @@ export function scoringApi(token: string) {
       next_striker_id?: number;
     }) => api.post(`/matches/${matchId}/ball`, data, { headers }).then(r => r.data.data),
 
+    editBall: (matchId: number, ballId: number, data: any) =>
+      api.put(`/matches/${matchId}/balls/${ballId}`, data, { headers }).then(r => r.data.data),
+
     endOver: (matchId: number, next_bowler_id: number) =>
       api.post(`/matches/${matchId}/over/end`, { next_bowler_id }, { headers }).then(r => r.data.data),
 
@@ -86,6 +89,9 @@ export function scoringApi(token: string) {
 
     exportCsvUrl: (matchId: number) =>
       `${api.defaults.baseURL}/matches/${matchId}/export.csv`,
+
+    exportPdfUrl: (matchId: number) =>
+      `${api.defaults.baseURL}/matches/${matchId}/export.pdf`,
 
     unlockMatch: (matchId: number) =>
       api.post(`/matches/${matchId}/unlock`, {}, { headers }).then(r => r.data.data),

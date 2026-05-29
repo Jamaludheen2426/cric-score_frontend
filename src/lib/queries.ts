@@ -79,7 +79,7 @@ export function useCreateMatch() {
 
 export function useVerifyPin() {
   return useMutation({
-    mutationFn: ({ id, pin }: { id: number; pin: string }) => matchesApi.verifyPin(id, pin),
+    mutationFn: ({ id, pin, force }: { id: number; pin: string; force?: boolean }) => matchesApi.verifyPin(id, pin, force),
   });
 }
 
@@ -158,6 +158,7 @@ export function useScoringActions(token: string, matchId: number) {
   // as soon as the mutation resolves so it doesn't block tap rhythm.
   const startMatch = useMutation({ mutationFn: (data: any)              => api.start(matchId, data),               onSuccess: invalidateAll  });
   const addBall    = useMutation({ mutationFn: (data: any)              => api.addBall(matchId, data),             onSuccess: invalidateMatch });
+  const editBall   = useMutation({ mutationFn: ({ ballId, data }: { ballId: number; data: any }) => api.editBall(matchId, ballId, data), onSuccess: invalidateAll });
   const endOver    = useMutation({ mutationFn: (nextBowlerId: number)   => api.endOver(matchId, nextBowlerId),     onSuccess: invalidateMatch });
   const correctPlayers = useMutation({ mutationFn: (data: any)           => api.correctPlayers(matchId, data),     onSuccess: invalidateMatch });
   const reviseTarget = useMutation({ mutationFn: (target: number)         => api.reviseTarget(matchId, target),     onSuccess: invalidateMatch });
@@ -168,5 +169,5 @@ export function useScoringActions(token: string, matchId: number) {
   const endMatch   = useMutation({ mutationFn: ()                        => api.endMatch(matchId),                  onSuccess: invalidateAll  });
   const undoBall   = useMutation({ mutationFn: ()                        => api.undoBall(matchId),                  onSuccess: invalidateMatch });
 
-  return { startMatch, addBall, endOver, correctPlayers, reviseTarget, addPenalty, unlockMatch, auditLogs, endInnings, endMatch, undoBall, exportCsvUrl: api.exportCsvUrl(matchId) };
+  return { startMatch, addBall, editBall, endOver, correctPlayers, reviseTarget, addPenalty, unlockMatch, auditLogs, endInnings, endMatch, undoBall, exportCsvUrl: api.exportCsvUrl(matchId), exportPdfUrl: api.exportPdfUrl(matchId) };
 }

@@ -6,16 +6,19 @@ import { useVerifyPin } from '@/lib/queries';
 export function PinGate({ matchId, onSuccess }: { matchId: number; onSuccess: (token: string) => void }) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
+  const [canTakeOver, setCanTakeOver] = useState(false);
   const verifyPin = useVerifyPin();
 
-  const submit = async () => {
+  const submit = async (force = false) => {
     setError('');
     try {
-      const data = await verifyPin.mutateAsync({ id: matchId, pin });
+      const data = await verifyPin.mutateAsync({ id: matchId, pin, force });
       onSuccess(data.token);
     } catch (e: any) {
-      setError(e?.response?.data?.error || 'Wrong key. Try again.');
-      setPin('');
+      const message = e?.response?.data?.error || 'Wrong key. Try again.';
+      setError(message);
+      setCanTakeOver(message.toLowerCase().includes('already active'));
+      if (!message.toLowerCase().includes('already active')) setPin('');
     }
   };
 
@@ -40,9 +43,14 @@ export function PinGate({ matchId, onSuccess }: { matchId: number; onSuccess: (t
 
         {error && <p className="mt-2 text-[12px] text-[var(--red-text)]">{error}</p>}
 
-        <button onClick={submit} disabled={pin.length < 4 || verifyPin.isPending} className="btn btn-primary mt-4 h-11 w-full">
+        <button onClick={() => submit()} disabled={pin.length < 4 || verifyPin.isPending} className="btn btn-primary mt-4 h-11 w-full">
           {verifyPin.isPending ? 'Verifying' : 'Enter'}
         </button>
+        {canTakeOver && (
+          <button onClick={() => submit(true)} disabled={verifyPin.isPending} className="btn btn-secondary mt-2 h-10 w-full">
+            Take over scorer
+          </button>
+        )}
         <p className="mt-3 text-center text-[11px] text-[var(--text-muted)]">Sessions stay open for 12 hours.</p>
       </div>
     </div>

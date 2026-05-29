@@ -18,6 +18,7 @@ import { EndMatchControls } from '@/components/scoring/EndMatchControls';
 import { EndInningsModal } from '@/components/scoring/EndInningsModal';
 import { CorrectionModal } from '@/components/scoring/CorrectionModal';
 import { DangerConfirmModal } from '@/components/scoring/DangerConfirmModal';
+import { PastBallEditModal } from '@/components/scoring/PastBallEditModal';
 import { MatchAlerts } from '@/components/MatchAlerts';
 import { BallRecord, LiveScore, Player } from '@/types';
 import { ballsPerOver, getBallColor, getBallLabel, getMatchResult } from '@/lib/utils';
@@ -107,6 +108,42 @@ function ScorerWarnings({ liveData, isFreeHit, isOverComplete, isPosting }: {
   );
 }
 
+function PartnershipAndFow({ innings }: { innings: LiveScore['innings'][number] }) {
+  const currentPartnership = innings.partnerships?.find(p => !p.ended);
+  const lastFow = innings.fallOfWickets?.slice(-3).reverse() || [];
+  if (!currentPartnership && lastFow.length === 0) return null;
+  const partnershipRate = currentPartnership && currentPartnership.balls > 0
+    ? ((currentPartnership.runs / currentPartnership.balls) * 6).toFixed(2)
+    : '-';
+  return (
+    <section className="grid gap-2 border-b border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2 sm:grid-cols-2">
+      {currentPartnership && (
+        <div className="rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2.5 py-2">
+          <p className="eyebrow mb-1">Partnership</p>
+          <p className="text-[13px] font-bold text-[var(--text-primary)]">
+            {currentPartnership.runs} <span className="font-normal text-[var(--text-secondary)]">({currentPartnership.balls}b)</span>
+          </p>
+          <p className="truncate text-[11px] text-[var(--text-muted)]">
+            {currentPartnership.batsman1_name} / {currentPartnership.batsman2_name} · RR {partnershipRate}
+          </p>
+        </div>
+      )}
+      {lastFow.length > 0 && (
+        <div className="rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2.5 py-2">
+          <p className="eyebrow mb-1">Fall of wickets</p>
+          <div className="flex flex-wrap gap-1">
+            {lastFow.map(fow => (
+              <span key={fow.wicket_number} className="rounded bg-white px-1.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)]">
+                {fow.score}/{fow.wicket_number} {fow.dismissed_player_name} {fow.overs}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function ScorePageContent({ matchId }: { matchId: number }) {
   const [token, setToken] = useState<string | null>(null);
   const [showStartModal, setShowStartModal] = useState(false);
@@ -116,6 +153,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
   const [correctionMode, setCorrectionMode] = useState<'batter' | 'bowler' | null>(null);
   const [dangerAction, setDangerAction] = useState<'endInnings' | 'endMatch' | null>(null);
   const [showAudit, setShowAudit] = useState(false);
+  const [showBallEdit, setShowBallEdit] = useState(false);
   const [pendingBall, setPendingBall] = useState<PendingBall>({ runs: 0 });
   const [liveData, setLiveData] = useState<LiveScore | null>(null);
   const [autoBowlerPromptOverId, setAutoBowlerPromptOverId] = useState<number | null>(null);
@@ -133,7 +171,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
     return () => es.close();
   }, [match?.share_token]);
 
-  const { startMatch, addBall, endOver, correctPlayers, reviseTarget, addPenalty, unlockMatch, auditLogs, endInnings, endMatch, undoBall, exportCsvUrl } = useScoringActions(token || '', matchId);
+  const { startMatch, addBall, editBall, endOver, correctPlayers, reviseTarget, addPenalty, unlockMatch, auditLogs, endInnings, endMatch, undoBall, exportCsvUrl, exportPdfUrl } = useScoringActions(token || '', matchId);
 
   useEffect(() => {
     if (!token || !match || match.status !== 'live') return;
@@ -214,6 +252,20 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
     a.click();
     URL.revokeObjectURL(url);
   };
+  const downloadPdf = async () => {
+    const res = await fetch(exportPdfUrl, { headers: { Authorization: `Bearer ${token}` } });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `match-${matchId}-scorecard.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  const firstDone = liveData?.innings?.find(i => i.innings_number === 1);
+  const secondDone = liveData?.innings?.find(i => i.innings_number === 2);
+  const tiedAfterSecond = Boolean(firstDone && secondDone && firstDone.total_runs === secondDone.total_runs);
+  const needsNextInnings = (liveData?.innings?.length ?? 0) < 2 || (tiedAfterSecond && (liveData?.innings?.length ?? 0) < 4);
 
   return (
     <div className="app-shell pb-[360px] sm:pb-[300px]">
@@ -315,7 +367,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
             <button onClick={() => setCorrectionMode('batter')} className="btn btn-secondary btn-sm flex-1">Correct batsmen</button>
             <button onClick={() => setCorrectionMode('bowler')} className="btn btn-secondary btn-sm flex-1">Change bowler</button>
           </section>
-          <section className="grid grid-cols-4 gap-1 border-b border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2">
+          <section className="grid grid-cols-3 gap-1 border-b border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2 sm:grid-cols-6">
             <button onClick={() => {
               const runs = Number(prompt('Penalty runs?') || '0');
               if (runs > 0) addPenalty.mutate({ runs, reason: 'manual' });
@@ -325,7 +377,9 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
               if (target > 0) reviseTarget.mutate(target);
             }} className="btn btn-secondary btn-sm">Target</button>
             <button onClick={() => setShowAudit(v => !v)} className="btn btn-secondary btn-sm">History</button>
+            <button onClick={() => setShowBallEdit(true)} className="btn btn-secondary btn-sm">Edit ball</button>
             <button onClick={downloadCsv} className="btn btn-secondary btn-sm">CSV</button>
+            <button onClick={downloadPdf} className="btn btn-secondary btn-sm">PDF</button>
           </section>
           {showAudit && (
             <section className="max-h-40 overflow-y-auto border-b border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2">
@@ -356,6 +410,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
             />
           )}
           <BatsmenTable innings={currentInnings} />
+          <PartnershipAndFow innings={currentInnings} />
           {currentInnings.currentBowler && currentOver && (
             <BowlerStats
               bowler={currentInnings.currentBowler}
@@ -416,15 +471,19 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
             <section className="card text-center">
               <p className="eyebrow mb-2">Innings Closed</p>
               <p className="text-[14px] font-bold">
-                {(liveData?.innings?.length ?? 0) < 2 ? 'Time for the chase.' : 'Both teams have batted.'}
+                {(liveData?.innings?.length ?? 0) < 2 ? 'Time for the chase.' : tiedAfterSecond && (liveData?.innings?.length ?? 0) < 4 ? 'Scores level. Super over needed.' : 'Both teams have batted.'}
               </p>
               <p className="mt-1 text-[12px] text-[var(--text-secondary)]">
                 {(liveData?.innings?.length ?? 0) < 2
                   ? 'Set up the openers for the second innings.'
+                  : tiedAfterSecond && (liveData?.innings?.length ?? 0) < 4
+                    ? ((liveData?.innings?.length ?? 0) === 2 ? 'Set up the first super-over batting side.' : 'Set up the chase for the super over.')
                   : 'Close the match to file the final scorecard.'}
               </p>
-              {(liveData?.innings?.length ?? 0) < 2 ? (
-                <button onClick={() => setShowEndInningsModal(true)} className="btn btn-primary mt-4">Open 2nd innings</button>
+              {needsNextInnings ? (
+                <button onClick={() => setShowEndInningsModal(true)} className="btn btn-primary mt-4">
+                  {(liveData?.innings?.length ?? 0) < 2 ? 'Open 2nd innings' : 'Open super over'}
+                </button>
               ) : (
                 <button onClick={() => endMatch.mutate()} disabled={endMatch.isPending} className="btn btn-primary mt-4">
                   {endMatch.isPending ? 'Filing' : 'End match'}
@@ -504,6 +563,23 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
           onConfirm={(data) => correctPlayers.mutate(data, { onSuccess: () => setCorrectionMode(null) })}
           onClose={() => setCorrectionMode(null)}
           isLoading={correctPlayers.isPending}
+        />
+      )}
+      {showBallEdit && liveData && currentOver && (
+        <PastBallEditModal
+          overs={liveData.previousOvers || []}
+          currentOver={{
+            id: currentOver.id,
+            over_number: currentOver.over_number,
+            bowler: currentOver.bowler,
+            runs: currentOver.runs,
+            wickets: currentOver.wickets,
+            legal_balls: currentOver.legal_balls,
+            balls: liveData.currentOverBalls,
+          }}
+          onConfirm={(ballId, data) => editBall.mutate({ ballId, data }, { onSuccess: () => setShowBallEdit(false) })}
+          onClose={() => setShowBallEdit(false)}
+          isLoading={editBall.isPending}
         />
       )}
       {dangerAction === 'endInnings' && (
