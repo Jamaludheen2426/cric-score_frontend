@@ -21,6 +21,7 @@ export interface Match {
   team_b_id: number;
   tournament_id?: number;
   total_overs: number;
+  balls_per_over?: number;
   players_per_side: number;
   death_overs_from?: number;
   wide_rule: 'normal' | 'strict';
@@ -75,6 +76,7 @@ export interface Innings {
   bowlingCards?: BowlingCard[];
   partnerships?: Partnership[];
   fallOfWickets?: FallOfWicket[];
+  overSummaries?: OverSummary[];
   run_rate?: number | null;
   required_rate?: number | null;
   runs_needed?: number | null;
@@ -153,6 +155,8 @@ export interface BallRecord {
   batsman?: string;
   extra_type?: 'bye' | 'leg_bye' | 'wide' | 'no_ball';
   next_striker_id?: number;
+  new_batsman_id?: number;
+  is_free_hit?: boolean;
 }
 
 export interface OverSummary {

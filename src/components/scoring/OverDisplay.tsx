@@ -10,11 +10,12 @@ interface Props {
   totalOvers: number;
   deathOversFrom?: number;
   wideRule?: 'normal' | 'strict';
+  ballsPerOver?: number;
 }
 
-export function OverDisplay({ balls, overNumber, legalBalls, deathOversFrom, wideRule = 'normal' }: Props) {
+export function OverDisplay({ balls, overNumber, legalBalls, deathOversFrom, wideRule = 'normal', ballsPerOver = 6 }: Props) {
   const legalBallsList = balls.filter(b => !b.is_wide && !b.is_noball);
-  const slots = Array(6).fill(null).map((_, i) => legalBallsList[i] || null);
+  const slots = Array(ballsPerOver).fill(null).map((_, i) => legalBallsList[i] || null);
   const extras = balls.filter(b => b.is_wide || b.is_noball);
   const overRuns = balls.reduce((sum, b) => sum + b.runs + b.extras, 0);
   const widePenalty = widePenaltyRuns(overNumber, wideRule, deathOversFrom);
@@ -35,7 +36,7 @@ export function OverDisplay({ balls, overNumber, legalBalls, deathOversFrom, wid
         <span key={i} className="pellet pellet-empty" />
       ))}
       {extras.map((ball, i) => <span key={`x-${i}`} className={getBallColor(ball)}>{getBallLabel(ball)}</span>)}
-      <span className="ml-auto shrink-0 text-[12px] text-[var(--text-secondary)]">{legalBalls}/6</span>
+      <span className="ml-auto shrink-0 text-[12px] text-[var(--text-secondary)]">{legalBalls}/{ballsPerOver}</span>
     </section>
   );
 }

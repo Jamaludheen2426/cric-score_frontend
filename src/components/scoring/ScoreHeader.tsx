@@ -1,7 +1,7 @@
 'use client';
 
 import { LiveScore, Match } from '@/types';
-import { formatOvers, formatRate, getScoreDisplay } from '@/lib/utils';
+import { ballsPerOver, formatOvers, formatRate, getScoreDisplay } from '@/lib/utils';
 
 interface Props { liveData: LiveScore; match: Match; }
 
@@ -13,8 +13,9 @@ export function ScoreHeader({ liveData, match }: Props) {
   const isChase = current.innings_number === 2;
   const target = current.target ?? null;
   const need = target != null ? target - current.total_runs : null;
-  const totalBalls = match.total_overs * 6;
-  const ballsBowled = Math.floor(Number(current.total_overs_bowled)) * 6
+  const perOver = ballsPerOver(liveData.match || match);
+  const totalBalls = match.total_overs * perOver;
+  const ballsBowled = Math.floor(Number(current.total_overs_bowled)) * perOver
                     + Math.round((Number(current.total_overs_bowled) % 1) * 10);
   const ballsLeft = totalBalls - ballsBowled;
 

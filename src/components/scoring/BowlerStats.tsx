@@ -6,11 +6,12 @@ interface Props {
   bowler: Player;
   over: CurrentOver;
   bowlingCards: BowlingCard[];
+  ballsPerOver?: number;
 }
 
-export function BowlerStats({ bowler, over, bowlingCards }: Props) {
+export function BowlerStats({ bowler, over, bowlingCards, ballsPerOver = 6 }: Props) {
   const card = bowlingCards.find(c => c.player_id === bowler.id);
-  const economy = card && card.legal_balls > 0 ? ((card.runs / card.legal_balls) * 6).toFixed(2) : '—';
+  const economy = card && card.legal_balls > 0 ? ((card.runs / card.legal_balls) * ballsPerOver).toFixed(2) : '-';
   const overs = card?.overs != null ? Number(card.overs).toFixed(1) : '0.0';
 
   return (
@@ -25,7 +26,7 @@ export function BowlerStats({ bowler, over, bowlingCards }: Props) {
           <span className="ml-2 text-[var(--text-muted)]">Econ {economy}</span>
         </span>
       </div>
-      <p className="mt-1 text-[11px] text-[var(--text-muted)]">Over {over.over_number} · ball {over.legal_balls}/6</p>
+      <p className="mt-1 text-[11px] text-[var(--text-muted)]">Over {over.over_number} · ball {over.legal_balls}/{ballsPerOver}</p>
     </section>
   );
 }

@@ -18,6 +18,7 @@ export function CreateMatchContent() {
     team_a_id: '',
     team_b_id: '',
     total_overs: 20,
+    balls_per_over: 6,
     players_per_side: 11,
     death_overs_from: '',
     wide_rule: 'normal' as 'normal' | 'strict',
@@ -82,6 +83,12 @@ export function CreateMatchContent() {
             <label className="label">Per side</label>
             <input className="input-mono text-center" type="number" min={1} max={11}
               value={form.players_per_side} onChange={e => set('players_per_side', Number(e.target.value))} />
+          </div>
+          <div>
+            <label className="label">Balls / over</label>
+            <input className="input-mono text-center" type="number" min={1} max={10}
+              value={form.balls_per_over} onChange={e => set('balls_per_over', Number(e.target.value))} />
+            <p className="mt-1 text-center text-[10px] font-semibold text-[var(--text-muted)]">Use 5 for Hundred-style sets.</p>
           </div>
           <div>
             <label className="label">Death from</label>

@@ -66,6 +66,17 @@ function buildAlerts(liveData: LiveScore): Alert[] {
   ];
 
   const leader = liveLeader(liveData);
+  const freeHitPending = Boolean(latestBall?.is_noball || (latestBall?.is_free_hit && (latestBall.is_wide || latestBall.is_noball)));
+  if (freeHitPending) {
+    alerts.push({
+      key: 'free-hit',
+      tone: 'gold',
+      title: 'Free hit',
+      detail: 'Next ball is protected',
+      icon: Zap,
+    });
+  }
+
   if (leader) {
     alerts.push({
       key: 'live-leader',
@@ -123,7 +134,8 @@ function buildAlerts(liveData: LiveScore): Alert[] {
   if (liveData.currentOver && current.currentBowler) {
     const legalBalls = liveData.currentOver.legal_balls;
     const overRuns = liveData.currentOver.runs;
-    if (legalBalls === 6 && overRuns === 0) {
+    const perOver = Number(liveData.match.balls_per_over || 6);
+    if (legalBalls === perOver && overRuns === 0) {
       alerts.push({
         key: 'maiden-complete',
         tone: 'green',
@@ -131,12 +143,12 @@ function buildAlerts(liveData: LiveScore): Alert[] {
         detail: `${current.currentBowler.name} gave nothing away`,
         icon: ShieldCheck,
       });
-    } else if (legalBalls > 0 && legalBalls < 6 && overRuns === 0) {
+    } else if (legalBalls > 0 && legalBalls < perOver && overRuns === 0) {
       alerts.push({
         key: 'maiden-on',
         tone: 'blue',
         title: 'Maiden on',
-        detail: `${6 - legalBalls} ball${6 - legalBalls === 1 ? '' : 's'} to finish it`,
+        detail: `${perOver - legalBalls} ball${perOver - legalBalls === 1 ? '' : 's'} to finish it`,
         icon: ShieldCheck,
       });
     }
@@ -164,7 +176,7 @@ function buildAlerts(liveData: LiveScore): Alert[] {
     });
   }
 
-  const projected = projectedScore(current.total_runs, inningsBalls, liveData.match.total_overs);
+  const projected = projectedScore(current.total_runs, inningsBalls, liveData.match.total_overs, Number(liveData.match.balls_per_over || 6));
   if (projected && current.innings_number === 1) {
     alerts.push({
       key: 'projected-score',
@@ -350,8 +362,9 @@ function lastFiveOverRate(liveData: LiveScore): { rate: number } | null {
   const balls = ballsFromOvers(liveData);
   const legalBalls = balls.filter(ball => !ball.is_wide && !ball.is_noball);
   if (legalBalls.length < 12) return null;
+  const perOver = Number(liveData.match.balls_per_over || 6);
 
-  const lastLegal = legalBalls.slice(-30);
+  const lastLegal = legalBalls.slice(-(perOver * 5));
   let legalSeen = 0;
   let totalRuns = 0;
   for (let i = balls.length - 1; i >= 0 && legalSeen < lastLegal.length; i -= 1) {
@@ -359,13 +372,13 @@ function lastFiveOverRate(liveData: LiveScore): { rate: number } | null {
     totalRuns += ball.runs + ball.extras;
     if (!ball.is_wide && !ball.is_noball) legalSeen += 1;
   }
-  return { rate: (totalRuns / legalSeen) * 6 };
+  return { rate: (totalRuns / legalSeen) * perOver };
 }
 
-function projectedScore(totalRuns: number, balls: BallRecord[], totalOvers: number): number | null {
+function projectedScore(totalRuns: number, balls: BallRecord[], totalOvers: number, ballsPerOver: number): number | null {
   const legal = legalBallCount(balls);
-  if (legal < 6) return null;
-  return Math.round((totalRuns / legal) * totalOvers * 6);
+  if (legal < ballsPerOver) return null;
+  return Math.round((totalRuns / legal) * totalOvers * ballsPerOver);
 }
 
 function chasePressure(runsNeeded: number, ballsLeft: number, requiredRate: number): { label: string; tone: Alert['tone'] } | null {

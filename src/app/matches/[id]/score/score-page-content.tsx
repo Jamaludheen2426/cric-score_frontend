@@ -19,10 +19,40 @@ import { CorrectionModal } from '@/components/scoring/CorrectionModal';
 import { DangerConfirmModal } from '@/components/scoring/DangerConfirmModal';
 import { MatchAlerts } from '@/components/MatchAlerts';
 import { LiveScore, Player } from '@/types';
+import { ballsPerOver } from '@/lib/utils';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 interface PendingBall { runs: number; is_wide?: boolean; is_noball?: boolean; extra_type?: 'bye' | 'leg_bye' | 'wide' | 'no_ball' }
+
+function auditTitle(action: string) {
+  return action
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function auditSummary(details: any) {
+  const payload = typeof details === 'string' ? safeJson(details) : details;
+  if (!payload) return 'Restore point saved';
+  if (payload.ball_id) return `Ball #${payload.ball_id}`;
+  if (payload.next_bowler_id) return `Next bowler #${payload.next_bowler_id}`;
+  if (payload.target) return `Target ${payload.target}`;
+  if (payload.runs) return `${payload.runs} penalty run${payload.runs === 1 ? '' : 's'}`;
+  if (payload.input) {
+    const ball = payload.input;
+    const parts = [
+      ball.is_wide ? 'wide' : ball.is_noball ? 'no ball' : `${ball.runs ?? 0} run${ball.runs === 1 ? '' : 's'}`,
+      ball.is_wicket ? 'wicket' : '',
+      ball.wicket_type ? String(ball.wicket_type).replace(/_/g, ' ') : '',
+    ].filter(Boolean);
+    return parts.join(' | ');
+  }
+  return 'Restore point saved';
+}
+
+function safeJson(value: string) {
+  try { return JSON.parse(value); } catch { return null; }
+}
 
 export function ScorePageContent({ matchId }: { matchId: number }) {
   const [token, setToken] = useState<string | null>(null);
@@ -58,7 +88,10 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
 
   const currentInnings = liveData?.innings?.find(i => i.status === 'live');
   const currentOver = liveData?.currentOver;
-  const isOverComplete = (currentOver?.legal_balls || 0) >= 6;
+  const perOver = ballsPerOver(liveData?.match || match);
+  const isOverComplete = (currentOver?.legal_balls || 0) >= perOver;
+  const lastCurrentBall = liveData?.currentOverBalls?.[liveData.currentOverBalls.length - 1];
+  const isFreeHit = Boolean(lastCurrentBall?.is_noball || (lastCurrentBall?.is_free_hit && (lastCurrentBall.is_wide || lastCurrentBall.is_noball)));
   const bowlingTeamPlayers = currentInnings
     ? (currentInnings.bowling_team_id === match.team_a_id ? match.teamA : match.teamB)?.players || []
     : [];
@@ -71,7 +104,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
       setQuickUndo(true);
       window.setTimeout(() => setQuickUndo(false), 5000);
       if (res?.allOut || res?.oversFinished || res?.targetReached) return;
-      if ((currentOver?.legal_balls || 0) + 1 >= 6 && !data.is_wide && !data.is_noball) {
+      if ((currentOver?.legal_balls || 0) + 1 >= perOver && !data.is_wide && !data.is_noball) {
         setShowBowlerModal(true);
       }
     };
@@ -90,7 +123,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
         setQuickUndo(true);
         window.setTimeout(() => setQuickUndo(false), 5000);
         if (res?.allOut || res?.oversFinished || res?.targetReached) return;
-        if ((currentOver?.legal_balls || 0) + 1 >= 6 && !pendingBall.is_wide && !pendingBall.is_noball) {
+        if ((currentOver?.legal_balls || 0) + 1 >= perOver && !pendingBall.is_wide && !pendingBall.is_noball) {
           setShowBowlerModal(true);
         }
       },
@@ -147,6 +180,8 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
                 Share
               </button>
               <Link href={`/matches/${match.id}/live`} target="_blank" className="btn btn-secondary btn-sm">Public</Link>
+              <Link href={`/matches/${match.id}/tv`} target="_blank" className="btn btn-secondary btn-sm">TV</Link>
+              <Link href={`/matches/${match.id}/operator`} target="_blank" className="btn btn-secondary btn-sm">Ops</Link>
             </>
           )}
         </div>
@@ -192,11 +227,17 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
           </section>
           {showAudit && (
             <section className="max-h-40 overflow-y-auto border-b border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2">
-              <p className="eyebrow mb-2">Correction history</p>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="eyebrow">Audit timeline</p>
+                <button onClick={() => auditLogs.refetch()} className="btn btn-secondary btn-sm">Refresh</button>
+              </div>
               {(auditLogs.data || []).length ? (auditLogs.data || []).map((log: any) => (
-                <div key={log.id} className="mb-1 flex justify-between gap-2 text-[11px]">
-                  <span className="font-semibold text-[var(--text-primary)]">{log.action}</span>
-                  <span className="text-[var(--text-muted)]">{new Date(log.created_at).toLocaleString()}</span>
+                <div key={log.id} className="mb-1.5 rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2 py-1.5 text-[11px]">
+                  <div className="flex justify-between gap-2">
+                    <span className="font-bold text-[var(--text-primary)]">{auditTitle(log.action)}</span>
+                    <span className="shrink-0 text-[var(--text-muted)]">{new Date(log.created_at).toLocaleString()}</span>
+                  </div>
+                  <p className="mt-0.5 text-[var(--text-secondary)]">Restore point #{log.id} - {auditSummary(log.details)}</p>
                 </div>
               )) : <p className="text-[12px] text-[var(--text-muted)]">No corrections yet.</p>}
             </section>
@@ -209,6 +250,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
               totalOvers={match.total_overs}
               deathOversFrom={match.death_overs_from}
               wideRule={match.wide_rule}
+              ballsPerOver={perOver}
             />
           )}
           <BatsmenTable innings={currentInnings} />
@@ -217,6 +259,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
               bowler={currentInnings.currentBowler}
               over={currentOver}
               bowlingCards={currentInnings.bowlingCards || []}
+              ballsPerOver={perOver}
             />
           )}
 
@@ -245,6 +288,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
               currentOverNumber={currentOver?.over_number}
               deathOversFrom={match.death_overs_from}
               wideRule={match.wide_rule}
+              isFreeHit={isFreeHit}
             />
             </>
           )}

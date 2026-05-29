@@ -54,6 +54,10 @@
   .page-wide { @apply mx-auto w-full max-w-[1120px] px-4 py-4 sm:px-6 sm:py-6; }
   .page-narrow { @apply mx-auto w-full max-w-[420px] px-4 py-8; }
   .app-shell { background: var(--bg-app); color: var(--text-primary); min-height: 100vh; }
+  .tv-shell { background: #111813; color: var(--text-primary); min-height: 100vh; }
+  .tv-score .score-number { font-size: clamp(44px, 6vw, 84px); }
+  .tv-score .score-over { font-size: clamp(16px, 2vw, 28px); }
+  .tv-score .card { padding: 18px; }
 
   .card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 12px; }
   .card-soft, .card-tight { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 12px; }

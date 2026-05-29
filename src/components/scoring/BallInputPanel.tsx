@@ -12,12 +12,13 @@ interface Props {
   currentOverNumber?: number;
   deathOversFrom?: number;
   wideRule?: 'normal' | 'strict';
+  isFreeHit?: boolean;
 }
 
 type Extra = 'normal' | 'wide' | 'noball' | 'bye' | 'leg_bye';
 const RUNS = [0, 1, 2, 3, 4, 6];
 
-export function BallInputPanel({ onBall, onUndo, disabled, isLoading, canUndo, currentOverNumber = 1, deathOversFrom, wideRule = 'normal' }: Props) {
+export function BallInputPanel({ onBall, onUndo, disabled, isLoading, canUndo, currentOverNumber = 1, deathOversFrom, wideRule = 'normal', isFreeHit }: Props) {
   const [runs, setRuns] = useState(0);
   const [extra, setExtra] = useState<Extra>('normal');
   const widePenalty = widePenaltyRuns(currentOverNumber, wideRule, deathOversFrom);
@@ -79,7 +80,9 @@ export function BallInputPanel({ onBall, onUndo, disabled, isLoading, canUndo, c
           ))}
         </div>
         <div className="mb-2 rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2 py-1.5 text-center text-[11px] font-semibold text-[var(--text-secondary)]">
-          Wide rule: {widePenalty ? 'wide adds 1 run and is re-bowled' : 'wide is re-bowled without penalty run'}
+          {isFreeHit
+            ? 'Free hit active: only run-out style dismissals count'
+            : `Wide rule: ${widePenalty ? 'wide adds 1 run and is re-bowled' : 'wide is re-bowled without penalty run'}`}
         </div>
         <div className="mb-2 flex items-center justify-between rounded border border-[var(--green)] bg-[#edf7ee] px-3 py-2 text-[12px]">
           <span className="font-bold text-[var(--green-text)]">Review</span>

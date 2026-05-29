@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { Club as BatIcon } from 'lucide-react';
+import { Club as BatIcon, Share2 } from 'lucide-react';
 import { LiveScore, Match, BallRecord, Innings } from '@/types';
-import { formatOvers, formatRate, getBallLabel, getBallColor, getScoreDisplay } from '@/lib/utils';
+import { ballsPerOver, formatOvers, formatRate, getBallLabel, getBallColor, getScoreDisplay } from '@/lib/utils';
 import { Narratives } from './Narratives';
 import { MatchAlerts } from './MatchAlerts';
 
@@ -14,13 +14,13 @@ function Pellet({ ball }: { ball: BallRecord }) {
 }
 
 /** Plain-English one-liner describing the state of the match. */
-function statusSentence(current: Innings | undefined, match: Match, completed: Innings[]): string {
+function statusSentence(current: Innings | undefined, match: Match, completed: Innings[], perOver: number): string {
   if (match.status === 'completed') return 'Match closed';
   if (!current) return 'Match not started';
   if (current.innings_number === 2 && current.target != null) {
     const need = current.target - current.total_runs;
-    const totalBalls = match.total_overs * 6;
-    const ballsBowled = Math.floor(Number(current.total_overs_bowled)) * 6
+    const totalBalls = match.total_overs * perOver;
+    const ballsBowled = Math.floor(Number(current.total_overs_bowled)) * perOver
                       + Math.round((Number(current.total_overs_bowled) % 1) * 10);
     const left = totalBalls - ballsBowled;
     if (need <= 0) return `${current.battingTeam?.name} won the match`;
@@ -45,6 +45,7 @@ export function LiveScoreCard({ liveData, match }: Props) {
   const [scoreTab, setScoreTab] = useState<'batting' | 'bowling' | 'notes'>('batting');
   const current = liveData.innings.find(i => i.status === 'live');
   const completed = liveData.innings.filter(i => i.status === 'completed');
+  const perOver = ballsPerOver(liveData.match || match);
 
   // Who's actually at the crease right now
   const striker     = current?.batsman1 && current.on_strike_batsman_id === current.batsman1.id ? current.batsman1
@@ -71,7 +72,7 @@ export function LiveScoreCard({ liveData, match }: Props) {
         <section className="rounded-md border border-[var(--green)] bg-[#edf7ee] px-3 py-2">
           <p className="text-[13px] font-bold text-[var(--green-text)]">
             <span className="live-dot mr-1.5" />
-            {statusSentence(current, match, completed)}
+            {statusSentence(current, match, completed, perOver)}
           </p>
         </section>
       )}
@@ -120,9 +121,10 @@ export function LiveScoreCard({ liveData, match }: Props) {
       )}
 
       {current && <TeamComparison current={current} completed={completed[0]} />}
-      {current?.innings_number === 2 && <ChaseBlocks current={current} match={match} />}
+      {current?.innings_number === 2 && <ChaseBlocks current={current} match={match} ballsPerOver={perOver} />}
 
       {current && <MatchAlerts liveData={liveData} />}
+      {current && <SharePoster liveData={liveData} current={current} match={match} />}
 
       {/* AT THE CRESE — striker + non-striker + bowler */}
       {current && (striker || nonStriker || current.currentBowler) && (
@@ -208,6 +210,7 @@ export function LiveScoreCard({ liveData, match }: Props) {
       )}
 
       {current && <CommentaryFeed liveData={liveData} />}
+      {current && <InsightPanels liveData={liveData} current={current} completed={completed[0]} match={match} ballsPerOver={perOver} />}
 
       {/* Live innings: batting + bowling cards + narratives */}
       {current && (
@@ -228,7 +231,7 @@ export function LiveScoreCard({ liveData, match }: Props) {
             ))}
           </div>
           {scoreTab === 'batting' && <BattingTable innings={current} framed={false} />}
-          {scoreTab === 'bowling' && <BowlingTable innings={current} framed={false} />}
+          {scoreTab === 'bowling' && <BowlingTable innings={current} framed={false} ballsPerOver={perOver} />}
           {scoreTab === 'notes' && <ScoreNotes innings={current} />}
         </section>
       )}
@@ -247,7 +250,7 @@ export function LiveScoreCard({ liveData, match }: Props) {
             </div>
           </section>
           <BattingTable innings={inn} />
-          <BowlingTable innings={inn} />
+          <BowlingTable innings={inn} ballsPerOver={perOver} />
           <Narratives innings={inn} />
         </div>
       ))}
@@ -338,11 +341,11 @@ function TeamComparison({ current, completed }: { current: Innings; completed?: 
   );
 }
 
-function ChaseBlocks({ current, match }: { current: Innings; match: Match }) {
+function ChaseBlocks({ current, match, ballsPerOver }: { current: Innings; match: Match; ballsPerOver: number }) {
   if (current.target == null || current.runs_needed == null || current.balls_left == null) return null;
-  const ballsPerBlock = 6;
+  const ballsPerBlock = ballsPerOver;
   const blocks = Math.min(4, Math.ceil(current.balls_left / ballsPerBlock));
-  const perOver = current.balls_left > 0 ? current.runs_needed / (current.balls_left / 6) : 0;
+  const perOver = current.balls_left > 0 ? current.runs_needed / (current.balls_left / ballsPerOver) : 0;
 
   return (
     <section className="card">
@@ -350,7 +353,7 @@ function ChaseBlocks({ current, match }: { current: Innings; match: Match }) {
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {Array.from({ length: blocks }).map((_, i) => {
           const balls = Math.min(6, current.balls_left! - i * 6);
-          const runs = Math.ceil(perOver * (balls / 6));
+          const runs = Math.ceil(perOver * (balls / ballsPerOver));
           return (
             <div key={i} className="rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2 py-2 text-center">
               <p className="text-[10px] font-bold uppercase tracking-[0.05em] text-[var(--text-muted)]">
@@ -402,6 +405,151 @@ function commentaryText(ball: BallRecord) {
   if (ball.runs === 4) return 'FOUR';
   if (ball.runs === 6) return 'SIX';
   return `${ball.runs} run${ball.runs === 1 ? '' : 's'}`;
+}
+
+function SharePoster({ liveData, current, match }: { liveData: LiveScore; current: Innings; match: Match }) {
+  const [copied, setCopied] = useState(false);
+  const posterText = `${match.title}\n${current.battingTeam?.name}: ${current.total_runs}/${current.total_wickets} (${formatOvers(current.total_overs_bowled)}/${match.total_overs})\nCRR ${current.run_rate != null ? formatRate(current.run_rate) : '-'}${current.target ? `\nTarget ${current.target} | Need ${current.runs_needed} from ${current.balls_left}` : ''}`;
+
+  return (
+    <section className="rounded-md border border-[var(--border)] bg-[var(--bg-card)] p-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="eyebrow mb-1">Share card</p>
+          <p className="truncate text-[13px] font-bold text-[var(--text-primary)]">{current.battingTeam?.name} {current.total_runs}/{current.total_wickets}</p>
+          <p className="text-[11px] text-[var(--text-muted)]">{liveData.match.teamA?.name || match.teamA?.name} v {liveData.match.teamB?.name || match.teamB?.name}</p>
+        </div>
+        <button
+          onClick={async () => {
+            await navigator.clipboard.writeText(posterText);
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1600);
+          }}
+          className="btn btn-secondary btn-sm"
+          title="Copy shareable score text"
+        >
+          <Share2 size={14} />
+          {copied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function InsightPanels({ liveData, current, completed, match, ballsPerOver }: {
+  liveData: LiveScore;
+  current: Innings;
+  completed?: Innings;
+  match: Match;
+  ballsPerOver: number;
+}) {
+  const overs = current.overSummaries || [];
+  if (overs.length === 0 && liveData.currentOverBalls.length === 0) return null;
+  const currentOver = liveData.currentOver && liveData.currentOverBalls.length > 0
+    ? [{
+        id: liveData.currentOver.id,
+        over_number: liveData.currentOver.over_number,
+        runs: liveData.currentOver.runs,
+        wickets: liveData.currentOver.wickets,
+        legal_balls: liveData.currentOver.legal_balls,
+        balls: liveData.currentOverBalls,
+      }]
+    : [];
+  const allOvers = overs.length > 0 ? overs : [...(liveData.previousOvers || []), ...currentOver];
+  const highlights = allOvers.flatMap(over => over.balls.map((ball, i) => ({ ball, over: `${over.over_number}.${i + 1}` })))
+    .filter(item => item.ball.is_wicket || item.ball.runs === 4 || item.ball.runs === 6 || item.ball.is_free_hit)
+    .slice(-6)
+    .reverse();
+  const maxOverRuns = Math.max(1, ...allOvers.map(o => o.runs));
+  const totalBalls = match.total_overs * ballsPerOver;
+  const pressure = current.target && current.runs_needed != null && current.balls_left != null
+    ? Math.max(0, Math.min(100, 100 - (current.runs_needed / Math.max(1, current.target)) * 100 + (current.balls_left / Math.max(1, totalBalls)) * 20))
+    : null;
+
+  let running = 0;
+  const worm = allOvers.map(over => {
+    running += over.runs;
+    return { label: over.over_number, runs: running };
+  });
+  const maxWorm = Math.max(1, ...worm.map(w => w.runs), completed?.total_runs || 0);
+
+  return (
+    <section className="card">
+      <p className="eyebrow mb-2">Live charts</p>
+      {pressure != null && (
+        <div className="mb-3 rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2.5 py-2">
+          <div className="mb-1 flex justify-between text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--text-muted)]">
+            <span>Win pressure</span>
+            <span>{Math.round(pressure)}%</span>
+          </div>
+          <div className="h-2 rounded bg-[var(--bg-card)]">
+            <div className="h-2 rounded bg-[var(--green)]" style={{ width: `${pressure}%` }} />
+          </div>
+        </div>
+      )}
+      <div className="grid gap-3 md:grid-cols-2">
+        <div>
+          <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--text-muted)]">Run-rate graph</p>
+          <div className="flex h-24 items-end gap-1 rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-2">
+            {allOvers.slice(-12).map(over => (
+              <div key={over.id} className="flex flex-1 flex-col items-center gap-1">
+                <div className="w-full rounded-t bg-[var(--green)]" style={{ height: `${Math.max(6, (over.runs / maxOverRuns) * 72)}px` }} />
+                <span className="text-[9px] tabular-nums text-[var(--text-muted)]">{over.over_number}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--text-muted)]">Worm chart</p>
+          <div className="flex h-24 items-end gap-1 rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-2">
+            {worm.slice(-12).map(point => (
+              <div key={point.label} className="flex flex-1 flex-col items-center gap-1">
+                <div className="h-2 w-full rounded bg-[var(--blue)]" style={{ marginBottom: `${Math.max(0, (point.runs / maxWorm) * 64)}px` }} />
+                <span className="text-[9px] tabular-nums text-[var(--text-muted)]">{point.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <OverComparison current={current} completed={completed} />
+      {highlights.length > 0 && (
+        <div className="mt-3">
+          <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--text-muted)]">Auto highlights</p>
+          <div className="grid gap-1.5">
+            {highlights.map((item, i) => (
+              <div key={`${item.over}-${i}`} className="flex items-center gap-2 rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2 py-1.5 text-[12px]">
+                <span className="w-8 font-mono tabular-nums text-[var(--text-muted)]">{item.over}</span>
+                <span className={getBallColor(item.ball)}>{getBallLabel(item.ball)}</span>
+                <span className="truncate text-[var(--text-secondary)]">{commentaryText(item.ball)}{item.ball.is_free_hit ? ' on free hit' : ''}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function OverComparison({ current, completed }: { current: Innings; completed?: Innings }) {
+  if (!completed?.overSummaries?.length || !current.overSummaries?.length) return null;
+  const rows = current.overSummaries.slice(-6);
+  return (
+    <div className="mt-3">
+      <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--text-muted)]">Over-by-over comparison</p>
+      <div className="grid gap-1.5">
+        {rows.map(over => {
+          const first = completed.overSummaries?.find(o => o.over_number === over.over_number);
+          return (
+            <div key={over.id} className="grid grid-cols-[42px_1fr_1fr] items-center gap-2 text-[11px]">
+              <span className="font-mono tabular-nums text-[var(--text-muted)]">O{over.over_number}</span>
+              <span className="rounded bg-[#edf7ee] px-2 py-1 font-bold text-[var(--green-text)]">{current.battingTeam?.name}: {over.runs}</span>
+              <span className="rounded bg-[#eef4ff] px-2 py-1 font-bold text-[var(--blue-text)]">{completed.battingTeam?.name}: {first?.runs ?? '-'}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function ScoreNotes({ innings }: { innings: Innings }) {
@@ -488,7 +636,7 @@ function BattingTable({ innings, framed = true }: { innings: LiveScore['innings'
   );
 }
 
-function BowlingTable({ innings, framed = true }: { innings: LiveScore['innings'][number]; framed?: boolean }) {
+function BowlingTable({ innings, framed = true, ballsPerOver = 6 }: { innings: LiveScore['innings'][number]; framed?: boolean; ballsPerOver?: number }) {
   if (!innings.bowlingCards?.length) return null;
   return (
     <section className={framed ? 'card' : ''}>
@@ -516,7 +664,7 @@ function BowlingTable({ innings, framed = true }: { innings: LiveScore['innings'
         </thead>
         <tbody>
           {innings.bowlingCards!.map(card => {
-            const econ = card.legal_balls > 0 ? ((card.runs / card.legal_balls) * 6).toFixed(2) : '—';
+            const econ = card.legal_balls > 0 ? ((card.runs / card.legal_balls) * ballsPerOver).toFixed(2) : '—';
             const overs = card.overs != null ? Number(card.overs).toFixed(1) : '0.0';
             const isCurrent = card.player_id === innings.current_bowler_id;
             return (

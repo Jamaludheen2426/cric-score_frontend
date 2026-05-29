@@ -6,20 +6,26 @@ export function formatOvers(oversFloat: number): string {
   return `${full}.${balls}`;
 }
 
+export function ballsPerOver(match?: { balls_per_over?: number | null }): number {
+  const value = Number(match?.balls_per_over || 6);
+  return Number.isFinite(value) && value > 0 ? value : 6;
+}
+
 export function formatRate(rate: number): string {
   return rate.toFixed(2);
 }
 
 export function getBallLabel(ball: BallRecord): string {
-  if (ball.is_wicket) return 'W';
+  const suffix = ball.is_free_hit ? '*' : '';
+  if (ball.is_wicket) return `W${suffix}`;
   if (ball.is_wide) {
     const extraRuns = Math.max(0, ball.extras - 1);
-    return `Wd${extraRuns > 0 ? `+${extraRuns}` : ''}`;
+    return `Wd${extraRuns > 0 ? `+${extraRuns}` : ''}${suffix}`;
   }
-  if (ball.is_noball) return `Nb${ball.runs > 0 ? `+${ball.runs}` : ''}`;
-  if (ball.extra_type === 'bye') return `B${ball.extras > 0 ? ball.extras : ''}`;
-  if (ball.extra_type === 'leg_bye') return `LB${ball.extras > 0 ? ball.extras : ''}`;
-  return String(ball.runs);
+  if (ball.is_noball) return `Nb${ball.runs > 0 ? `+${ball.runs}` : ''}${suffix}`;
+  if (ball.extra_type === 'bye') return `B${ball.extras > 0 ? ball.extras : ''}${suffix}`;
+  if (ball.extra_type === 'leg_bye') return `LB${ball.extras > 0 ? ball.extras : ''}${suffix}`;
+  return `${ball.runs}${suffix}`;
 }
 
 export function getBallColor(ball: BallRecord): string {
