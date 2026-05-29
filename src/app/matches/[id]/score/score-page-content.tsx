@@ -15,11 +15,14 @@ import { BowlerSelectModal } from '@/components/scoring/BowlerSelectModal';
 import { WicketModal } from '@/components/scoring/WicketModal';
 import { EndMatchControls } from '@/components/scoring/EndMatchControls';
 import { EndInningsModal } from '@/components/scoring/EndInningsModal';
+import { CorrectionModal } from '@/components/scoring/CorrectionModal';
+import { DangerConfirmModal } from '@/components/scoring/DangerConfirmModal';
+import { MatchAlerts } from '@/components/MatchAlerts';
 import { LiveScore, Player } from '@/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
-interface PendingBall { runs: number; is_wide?: boolean; is_noball?: boolean }
+interface PendingBall { runs: number; is_wide?: boolean; is_noball?: boolean; extra_type?: 'bye' | 'leg_bye' | 'wide' | 'no_ball' }
 
 export function ScorePageContent({ matchId }: { matchId: number }) {
   const [token, setToken] = useState<string | null>(null);
@@ -27,6 +30,10 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
   const [showBowlerModal, setShowBowlerModal] = useState(false);
   const [showWicketModal, setShowWicketModal] = useState(false);
   const [showEndInningsModal, setShowEndInningsModal] = useState(false);
+  const [correctionMode, setCorrectionMode] = useState<'batter' | 'bowler' | null>(null);
+  const [dangerAction, setDangerAction] = useState<'endInnings' | 'endMatch' | null>(null);
+  const [showAudit, setShowAudit] = useState(false);
+  const [quickUndo, setQuickUndo] = useState(false);
   const [pendingBall, setPendingBall] = useState<PendingBall>({ runs: 0 });
   const [liveData, setLiveData] = useState<LiveScore | null>(null);
 
@@ -43,7 +50,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
     return () => es.close();
   }, [match?.share_token]);
 
-  const { startMatch, addBall, endOver, endInnings, endMatch, undoBall } = useScoringActions(token || '', matchId);
+  const { startMatch, addBall, endOver, correctPlayers, reviseTarget, addPenalty, unlockMatch, auditLogs, endInnings, endMatch, undoBall, exportCsvUrl } = useScoringActions(token || '', matchId);
 
   if (isLoading) return <PageLoader label="Loading match" />;
   if (!match) return <div className="page text-[var(--text-secondary)]">Match not found.</div>;
@@ -60,25 +67,28 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
     : [];
 
   const handleBall = (data: any) => {
+    const afterBall = (res: any) => {
+      setQuickUndo(true);
+      window.setTimeout(() => setQuickUndo(false), 5000);
+      if (res?.allOut || res?.oversFinished || res?.targetReached) return;
+      if ((currentOver?.legal_balls || 0) + 1 >= 6 && !data.is_wide && !data.is_noball) {
+        setShowBowlerModal(true);
+      }
+    };
     if (data.is_wicket) {
-      setPendingBall({ runs: data.runs || 0, is_wide: data.is_wide, is_noball: data.is_noball });
+      setPendingBall({ runs: data.runs || 0, is_wide: data.is_wide, is_noball: data.is_noball, extra_type: data.extra_type });
       setShowWicketModal(true);
     } else {
-      addBall.mutate(data, {
-        onSuccess: (res: any) => {
-          if (res?.allOut || res?.oversFinished || res?.targetReached) return;
-          if ((currentOver?.legal_balls || 0) + 1 >= 6 && !data.is_wide && !data.is_noball) {
-            setShowBowlerModal(true);
-          }
-        },
-      });
+      addBall.mutate(data, { onSuccess: afterBall });
     }
   };
 
   const handleWicketConfirm = (wicketData: any) => {
     setShowWicketModal(false);
-    addBall.mutate({ ...wicketData, runs: pendingBall.runs, is_wide: pendingBall.is_wide, is_noball: pendingBall.is_noball }, {
+    addBall.mutate({ ...wicketData, runs: pendingBall.runs, is_wide: pendingBall.is_wide, is_noball: pendingBall.is_noball, extra_type: pendingBall.extra_type }, {
       onSuccess: (res: any) => {
+        setQuickUndo(true);
+        window.setTimeout(() => setQuickUndo(false), 5000);
         if (res?.allOut || res?.oversFinished || res?.targetReached) return;
         if ((currentOver?.legal_balls || 0) + 1 >= 6 && !pendingBall.is_wide && !pendingBall.is_noball) {
           setShowBowlerModal(true);
@@ -88,6 +98,16 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
   };
 
   const hasBallsInOver = (currentOver?.legal_balls ?? 0) > 0 || (liveData?.currentOverBalls?.length ?? 0) > 0;
+  const downloadCsv = async () => {
+    const res = await fetch(exportCsvUrl, { headers: { Authorization: `Bearer ${token}` } });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `match-${matchId}-score.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="app-shell pb-[200px]">
@@ -102,7 +122,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
           {match.status === 'live' && currentInnings && (
             <button
               onClick={() => {
-                if (confirm('End the current innings? This cannot be undone.')) setShowEndInningsModal(true);
+                setDangerAction('endInnings');
               }}
               className="btn btn-secondary btn-sm"
             >
@@ -153,12 +173,42 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
       {(match.status === 'live' || liveData) && currentInnings && liveData && (
         <>
           <ScoreHeader liveData={liveData} match={match} />
+          <MatchAlerts liveData={liveData} compact />
+          <section className="flex gap-2 border-b border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2">
+            <button onClick={() => setCorrectionMode('batter')} className="btn btn-secondary btn-sm flex-1">Correct batsmen</button>
+            <button onClick={() => setCorrectionMode('bowler')} className="btn btn-secondary btn-sm flex-1">Change bowler</button>
+          </section>
+          <section className="grid grid-cols-4 gap-1 border-b border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2">
+            <button onClick={() => {
+              const runs = Number(prompt('Penalty runs?') || '0');
+              if (runs > 0) addPenalty.mutate({ runs, reason: 'manual' });
+            }} className="btn btn-secondary btn-sm">Penalty</button>
+            <button onClick={() => {
+              const target = Number(prompt('Revised target?') || '0');
+              if (target > 0) reviseTarget.mutate(target);
+            }} className="btn btn-secondary btn-sm">Target</button>
+            <button onClick={() => setShowAudit(v => !v)} className="btn btn-secondary btn-sm">History</button>
+            <button onClick={downloadCsv} className="btn btn-secondary btn-sm">CSV</button>
+          </section>
+          {showAudit && (
+            <section className="max-h-40 overflow-y-auto border-b border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2">
+              <p className="eyebrow mb-2">Correction history</p>
+              {(auditLogs.data || []).length ? (auditLogs.data || []).map((log: any) => (
+                <div key={log.id} className="mb-1 flex justify-between gap-2 text-[11px]">
+                  <span className="font-semibold text-[var(--text-primary)]">{log.action}</span>
+                  <span className="text-[var(--text-muted)]">{new Date(log.created_at).toLocaleString()}</span>
+                </div>
+              )) : <p className="text-[12px] text-[var(--text-muted)]">No corrections yet.</p>}
+            </section>
+          )}
           {currentOver && (
             <OverDisplay
               balls={liveData.currentOverBalls}
               overNumber={currentOver.over_number}
               legalBalls={currentOver.legal_balls}
               totalOvers={match.total_overs}
+              deathOversFrom={match.death_overs_from}
+              wideRule={match.wide_rule}
             />
           )}
           <BatsmenTable innings={currentInnings} />
@@ -179,18 +229,30 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
               </section>
             </div>
           ) : (
+            <>
+            {quickUndo && (
+              <div className="fixed bottom-[202px] left-3 right-3 z-[55] mx-auto flex max-w-[420px] items-center justify-between rounded-md border border-[var(--green)] bg-[#edf7ee] px-3 py-2 text-[12px] shadow-lg">
+                <span className="font-bold text-[var(--green-text)]">Ball saved</span>
+                <button onClick={() => { setQuickUndo(false); undoBall.mutate(); }} className="btn btn-secondary btn-sm">Undo now</button>
+              </div>
+            )}
             <BallInputPanel
               onBall={handleBall}
-              onUndo={() => { if (confirm('Undo the last ball?')) undoBall.mutate(); }}
+              onUndo={() => undoBall.mutate()}
               canUndo={hasBallsInOver}
               disabled={addBall.isPending}
               isLoading={addBall.isPending}
+              currentOverNumber={currentOver?.over_number}
+              deathOversFrom={match.death_overs_from}
+              wideRule={match.wide_rule}
             />
+            </>
           )}
 
           <EndMatchControls
             matchStatus={match.status}
             onEndMatch={() => endMatch.mutate()}
+            onRequestEndMatch={() => setDangerAction('endMatch')}
             isLoading={endMatch.isPending}
           />
         </>
@@ -233,6 +295,9 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
             <p className="text-[16px] font-bold">Match closed.</p>
             <p className="mt-1 text-[12px] text-[var(--text-secondary)]">The full scorecard is in the archive.</p>
             <Link href={`/matches/${matchId}/summary`} className="btn btn-primary mt-4 inline-flex">View scorecard</Link>
+            <button onClick={() => unlockMatch.mutate()} disabled={unlockMatch.isPending} className="btn btn-secondary mt-2 inline-flex">
+              {unlockMatch.isPending ? 'Unlocking' : 'Admin unlock'}
+            </button>
           </section>
         </div>
       )}
@@ -278,6 +343,39 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
           onConfirm={(data) => endInnings.mutate(data, { onSuccess: () => setShowEndInningsModal(false) })}
           onClose={() => setShowEndInningsModal(false)}
           isLoading={endInnings.isPending}
+        />
+      )}
+      {correctionMode && currentInnings && (
+        <CorrectionModal
+          mode={correctionMode}
+          innings={currentInnings}
+          battingPlayers={battingTeamPlayers}
+          bowlingPlayers={bowlingTeamPlayers}
+          onConfirm={(data) => correctPlayers.mutate(data, { onSuccess: () => setCorrectionMode(null) })}
+          onClose={() => setCorrectionMode(null)}
+          isLoading={correctPlayers.isPending}
+        />
+      )}
+      {dangerAction === 'endInnings' && (
+        <DangerConfirmModal
+          title="End current innings?"
+          message="This closes the batting innings and opens the setup for the next innings. Use this only when the innings is genuinely finished."
+          confirmLabel="End innings"
+          onClose={() => setDangerAction(null)}
+          onConfirm={() => {
+            setDangerAction(null);
+            setShowEndInningsModal(true);
+          }}
+        />
+      )}
+      {dangerAction === 'endMatch' && (
+        <DangerConfirmModal
+          title="End match?"
+          message="This files the final scorecard and stops live scoring for this match."
+          confirmLabel="End match"
+          isLoading={endMatch.isPending}
+          onClose={() => setDangerAction(null)}
+          onConfirm={() => endMatch.mutate(undefined, { onSuccess: () => setDangerAction(null) })}
         />
       )}
     </div>

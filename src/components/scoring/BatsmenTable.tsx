@@ -1,5 +1,6 @@
 'use client';
 
+import { Club as BatIcon } from 'lucide-react';
 import { Innings } from '@/types';
 
 interface Props {
@@ -20,8 +21,15 @@ export function BatsmenTable({ innings }: Props) {
         const balls = card?.balls ?? 0;
         const strikeRate = balls ? ((runs / balls) * 100).toFixed(2) : '-';
         return (
-          <div key={b.id} className={`flex h-11 items-center gap-2 border-b border-[var(--border-subtle)] last:border-b-0 ${onStrike ? 'border-l-[3px] border-l-[var(--striker)] pl-2' : 'pl-[11px]'}`}>
-            <span className="w-4 text-[11px] font-bold text-[var(--green-text)]">{onStrike ? '*' : ''}</span>
+          <div
+            key={b.id}
+            className={`flex h-11 items-center gap-2 border-b border-[var(--border-subtle)] last:border-b-0 ${
+              onStrike ? 'border-l-[3px] border-l-[var(--green)] bg-[#f6fbf1] pl-2' : 'pl-[11px]'
+            }`}
+          >
+            <span className="grid w-4 place-items-center text-[var(--green-text)]">
+              {onStrike ? <BatIcon size={14} strokeWidth={2.4} aria-label="On strike" /> : null}
+            </span>
             <span className={`min-w-0 flex-1 truncate text-[14px] ${onStrike ? 'font-bold text-[var(--text-primary)]' : 'font-semibold text-[var(--text-secondary)]'}`}>{b.name}</span>
             <span className="w-12 text-right text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">{runs}{onStrike ? '*' : ''}</span>
             <span className="w-10 text-right text-[12px] tabular-nums text-[var(--text-secondary)]">{balls}b</span>

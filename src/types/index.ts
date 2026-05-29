@@ -143,6 +143,7 @@ export interface CurrentOver {
 }
 
 export interface BallRecord {
+  id?: number;
   runs: number;
   is_wide: boolean;
   is_noball: boolean;
@@ -150,6 +151,18 @@ export interface BallRecord {
   wicket_type?: string;
   extras: number;
   batsman?: string;
+  extra_type?: 'bye' | 'leg_bye' | 'wide' | 'no_ball';
+  next_striker_id?: number;
+}
+
+export interface OverSummary {
+  id: number;
+  over_number: number;
+  bowler?: Player;
+  runs: number;
+  wickets: number;
+  legal_balls: number;
+  balls: BallRecord[];
 }
 
 export interface LiveScore {
@@ -158,6 +171,7 @@ export interface LiveScore {
   currentOver: CurrentOver | null;
   currentOverBalls: BallRecord[];
   recentBalls: BallRecord[];
+  previousOvers?: OverSummary[];
 }
 
-export type WicketType = 'bowled' | 'caught' | 'lbw' | 'run_out' | 'stumped' | 'hit_wicket' | 'obstructing_field' | 'retired';
+export type WicketType = 'bowled' | 'caught' | 'lbw' | 'run_out' | 'stumped' | 'hit_wicket' | 'obstructing_field' | 'retired' | 'retired_hurt' | 'retired_out';

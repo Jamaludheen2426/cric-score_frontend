@@ -17,6 +17,8 @@ export function getBallLabel(ball: BallRecord): string {
     return `Wd${extraRuns > 0 ? `+${extraRuns}` : ''}`;
   }
   if (ball.is_noball) return `Nb${ball.runs > 0 ? `+${ball.runs}` : ''}`;
+  if (ball.extra_type === 'bye') return `B${ball.extras > 0 ? ball.extras : ''}`;
+  if (ball.extra_type === 'leg_bye') return `LB${ball.extras > 0 ? ball.extras : ''}`;
   return String(ball.runs);
 }
 
@@ -24,6 +26,7 @@ export function getBallColor(ball: BallRecord): string {
   if (ball.is_wicket) return 'pellet pellet-wicket';
   if (ball.is_wide) return 'pellet pellet-wide';
   if (ball.is_noball) return 'pellet pellet-nb';
+  if (ball.extra_type === 'bye' || ball.extra_type === 'leg_bye') return 'pellet pellet-bye';
   if (ball.runs === 6) return 'pellet pellet-six';
   if (ball.runs === 4) return 'pellet pellet-four';
   if (ball.runs === 0) return 'pellet pellet-dot';
@@ -41,4 +44,8 @@ export function getScoreDisplay(innings: { total_runs: number; total_wickets: nu
 export function isDeathOvers(currentOver: number, deathFrom?: number): boolean {
   if (!deathFrom) return false;
   return currentOver >= deathFrom;
+}
+
+export function widePenaltyRuns(currentOver: number, wideRule: 'normal' | 'strict', deathFrom?: number): number {
+  return wideRule === 'strict' || isDeathOvers(currentOver, deathFrom) ? 1 : 0;
 }

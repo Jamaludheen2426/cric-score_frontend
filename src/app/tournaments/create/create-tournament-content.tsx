@@ -62,6 +62,7 @@ export function CreateTournamentContent() {
             <div className="border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3">
               <label className="label">Wide runs from</label>
               <input className="input" type="number" min={1} max={form.total_overs} value={form.death_overs_from} onChange={e => setForm(prev => ({ ...prev, death_overs_from: e.target.value }))} />
+              <p className="mt-1 text-[10px] font-semibold text-[var(--text-muted)]">From this over, wide = +1 and re-ball.</p>
             </div>
           </div>
           <div className="border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3">

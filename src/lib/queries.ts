@@ -159,9 +159,14 @@ export function useScoringActions(token: string, matchId: number) {
   const startMatch = useMutation({ mutationFn: (data: any)              => api.start(matchId, data),               onSuccess: invalidateAll  });
   const addBall    = useMutation({ mutationFn: (data: any)              => api.addBall(matchId, data),             onSuccess: invalidateMatch });
   const endOver    = useMutation({ mutationFn: (nextBowlerId: number)   => api.endOver(matchId, nextBowlerId),     onSuccess: invalidateMatch });
+  const correctPlayers = useMutation({ mutationFn: (data: any)           => api.correctPlayers(matchId, data),     onSuccess: invalidateMatch });
+  const reviseTarget = useMutation({ mutationFn: (target: number)         => api.reviseTarget(matchId, target),     onSuccess: invalidateMatch });
+  const addPenalty = useMutation({ mutationFn: (data: any)                => api.addPenalty(matchId, data),         onSuccess: invalidateMatch });
+  const unlockMatch = useMutation({ mutationFn: ()                        => api.unlockMatch(matchId),              onSuccess: invalidateAll });
+  const auditLogs = useQuery({ queryKey: ['audit', matchId], queryFn: () => api.auditLogs(matchId), enabled: !!token && !!matchId });
   const endInnings = useMutation({ mutationFn: (data: any)              => api.endInnings(matchId, data),          onSuccess: invalidateAll  });
   const endMatch   = useMutation({ mutationFn: ()                        => api.endMatch(matchId),                  onSuccess: invalidateAll  });
   const undoBall   = useMutation({ mutationFn: ()                        => api.undoBall(matchId),                  onSuccess: invalidateMatch });
 
-  return { startMatch, addBall, endOver, endInnings, endMatch, undoBall };
+  return { startMatch, addBall, endOver, correctPlayers, reviseTarget, addPenalty, unlockMatch, auditLogs, endInnings, endMatch, undoBall, exportCsvUrl: api.exportCsvUrl(matchId) };
 }

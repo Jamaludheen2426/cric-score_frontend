@@ -1,8 +1,11 @@
 'use client';
 
+import { useState, type ReactNode } from 'react';
+import { Club as BatIcon } from 'lucide-react';
 import { LiveScore, Match, BallRecord, Innings } from '@/types';
 import { formatOvers, formatRate, getBallLabel, getBallColor, getScoreDisplay } from '@/lib/utils';
 import { Narratives } from './Narratives';
+import { MatchAlerts } from './MatchAlerts';
 
 interface Props { liveData: LiveScore; match: Match; }
 
@@ -39,6 +42,7 @@ function lastBallHeadline(b: BallRecord): { title: string; tone: 'wicket' | 'six
 }
 
 export function LiveScoreCard({ liveData, match }: Props) {
+  const [scoreTab, setScoreTab] = useState<'batting' | 'bowling' | 'notes'>('batting');
   const current = liveData.innings.find(i => i.status === 'live');
   const completed = liveData.innings.filter(i => i.status === 'completed');
 
@@ -115,6 +119,11 @@ export function LiveScoreCard({ liveData, match }: Props) {
         </section>
       )}
 
+      {current && <TeamComparison current={current} completed={completed[0]} />}
+      {current?.innings_number === 2 && <ChaseBlocks current={current} match={match} />}
+
+      {current && <MatchAlerts liveData={liveData} />}
+
       {/* AT THE CRESE — striker + non-striker + bowler */}
       {current && (striker || nonStriker || current.currentBowler) && (
         <section className="card">
@@ -126,6 +135,7 @@ export function LiveScoreCard({ liveData, match }: Props) {
                 name={striker.name}
                 line={strikerCard ? `${strikerCard.runs}${strikerCard.is_out ? '' : '*'} (${strikerCard.balls}b)` : '0* (0b)'}
                 accent
+                icon={<BatIcon size={14} strokeWidth={2.4} aria-hidden />}
               />
             )}
             {nonStriker && (
@@ -172,20 +182,56 @@ export function LiveScoreCard({ liveData, match }: Props) {
         </section>
       )}
 
-      {/* Recent balls (across overs) */}
-      {liveData.recentBalls.length > 0 && (
+      {/* Previous overs */}
+      {(liveData.previousOvers?.length ?? 0) > 0 && (
         <section className="card">
-          <p className="eyebrow mb-2">Recent balls (last {liveData.recentBalls.length})</p>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {liveData.recentBalls.map((b, i) => <Pellet key={i} ball={b} />)}
+          <p className="eyebrow mb-2">Previous overs</p>
+          <div className="grid gap-2">
+            {liveData.previousOvers!.map(over => (
+              <div key={over.id} className="rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2.5 py-2">
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--text-muted)]">
+                    Over {over.over_number}
+                    {over.bowler?.name && <span className="normal-case tracking-normal font-normal text-[var(--text-secondary)]"> · {over.bowler.name}</span>}
+                  </p>
+                  <p className="text-[12px] font-bold tabular-nums text-[var(--text-primary)]">
+                    {over.runs}/{over.wickets}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {over.balls.map((b, i) => <Pellet key={i} ball={b} />)}
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       )}
 
+      {current && <CommentaryFeed liveData={liveData} />}
+
       {/* Live innings: batting + bowling cards + narratives */}
-      {current?.battingCards && <BattingTable innings={current} />}
-      {current?.bowlingCards && <BowlingTable innings={current} />}
-      {current && <Narratives innings={current} />}
+      {current && (
+        <section className="card">
+          <div className="mb-2 grid grid-cols-3 border-b border-[var(--border-subtle)]">
+            {(['batting', 'bowling', 'notes'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setScoreTab(tab)}
+                className={`h-9 border-b-2 text-[11px] font-bold uppercase tracking-[0.05em] ${
+                  scoreTab === tab
+                    ? 'border-[var(--green)] text-[var(--text-primary)]'
+                    : 'border-transparent text-[var(--text-muted)]'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+          {scoreTab === 'batting' && <BattingTable innings={current} framed={false} />}
+          {scoreTab === 'bowling' && <BowlingTable innings={current} framed={false} />}
+          {scoreTab === 'notes' && <ScoreNotes innings={current} />}
+        </section>
+      )}
 
       {/* Archived innings — both batting AND bowling AND narratives */}
       {completed.map(inn => (
@@ -217,10 +263,13 @@ export function LiveScoreCard({ liveData, match }: Props) {
   );
 }
 
-function CreaseTile({ role, name, line, accent }: { role: string; name: string; line: string; accent?: boolean }) {
+function CreaseTile({ role, name, line, accent, icon }: { role: string; name: string; line: string; accent?: boolean; icon?: ReactNode }) {
   return (
-    <div className={`rounded border p-2.5 ${accent ? 'border-[var(--green)] bg-[#edf7ee]' : 'border-[var(--border-subtle)] bg-[var(--bg-elevated)]'}`}>
-      <p className="text-[10px] font-bold uppercase tracking-[0.05em] text-[var(--text-muted)]">{role}</p>
+    <div className={`rounded border p-2.5 ${accent ? 'border-[var(--green)] border-l-[3px] bg-[#edf7ee]' : 'border-[var(--border-subtle)] bg-[var(--bg-elevated)]'}`}>
+      <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.05em] text-[var(--text-muted)]">
+        {icon && <span className="text-[var(--green-text)]">{icon}</span>}
+        {role}
+      </p>
       <p className="mt-0.5 truncate text-[14px] font-bold text-[var(--text-primary)]">{name}</p>
       <p className="text-[12px] font-mono tabular-nums text-[var(--text-secondary)]">{line}</p>
     </div>
@@ -263,10 +312,131 @@ function LastBallHeadline({ ball, bowlerName }: { ball: BallRecord; bowlerName?:
   );
 }
 
-function BattingTable({ innings }: { innings: LiveScore['innings'][number] }) {
-  if (!innings.battingCards?.length) return null;
+function TeamComparison({ current, completed }: { current: Innings; completed?: Innings }) {
+  if (!completed) return null;
+  const currentRuns = current.total_runs;
+  const completedRuns = completed.total_runs;
+  const max = Math.max(currentRuns, completedRuns, 1);
   return (
     <section className="card">
+      <p className="eyebrow mb-2">Team comparison</p>
+      {[
+        { name: completed.battingTeam?.name || 'Innings 1', runs: completedRuns },
+        { name: current.battingTeam?.name || 'Current', runs: currentRuns },
+      ].map(row => (
+        <div key={row.name} className="mb-2 last:mb-0">
+          <div className="mb-1 flex justify-between text-[12px] font-semibold">
+            <span className="truncate text-[var(--text-secondary)]">{row.name}</span>
+            <span className="tabular-nums text-[var(--text-primary)]">{row.runs}</span>
+          </div>
+          <div className="h-2 rounded bg-[var(--bg-elevated)]">
+            <div className="h-2 rounded bg-[var(--green)]" style={{ width: `${Math.max(4, (row.runs / max) * 100)}%` }} />
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function ChaseBlocks({ current, match }: { current: Innings; match: Match }) {
+  if (current.target == null || current.runs_needed == null || current.balls_left == null) return null;
+  const ballsPerBlock = 6;
+  const blocks = Math.min(4, Math.ceil(current.balls_left / ballsPerBlock));
+  const perOver = current.balls_left > 0 ? current.runs_needed / (current.balls_left / 6) : 0;
+
+  return (
+    <section className="card">
+      <p className="eyebrow mb-2">Required blocks</p>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {Array.from({ length: blocks }).map((_, i) => {
+          const balls = Math.min(6, current.balls_left! - i * 6);
+          const runs = Math.ceil(perOver * (balls / 6));
+          return (
+            <div key={i} className="rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2 py-2 text-center">
+              <p className="text-[10px] font-bold uppercase tracking-[0.05em] text-[var(--text-muted)]">
+                Next {balls}b
+              </p>
+              <p className="mt-1 text-[18px] font-bold tabular-nums text-[var(--text-primary)]">{runs}</p>
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-2 text-[11px] text-[var(--text-muted)]">Target {current.target} in {match.total_overs} overs.</p>
+    </section>
+  );
+}
+
+function CommentaryFeed({ liveData }: { liveData: LiveScore }) {
+  const rows = [
+    ...(liveData.previousOvers || []).flatMap(over =>
+      over.balls.map((ball, i) => ({ ball, label: `${over.over_number}.${i + 1}` }))
+    ),
+    ...liveData.currentOverBalls.map((ball, i) => ({ ball, label: `${liveData.currentOver?.over_number || ''}.${i + 1}` })),
+  ].slice(-8).reverse();
+
+  if (rows.length === 0) return null;
+
+  return (
+    <section className="card">
+      <p className="eyebrow mb-2">Commentary</p>
+      <div className="grid gap-1.5">
+        {rows.map((row, i) => (
+          <div key={`${row.label}-${i}`} className="flex items-center gap-2 text-[12px]">
+            <span className="w-8 shrink-0 font-mono tabular-nums text-[var(--text-muted)]">{row.label}</span>
+            <span className={getBallColor(row.ball)}>{getBallLabel(row.ball)}</span>
+            <span className="min-w-0 truncate text-[var(--text-secondary)]">{commentaryText(row.ball)}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function commentaryText(ball: BallRecord) {
+  if (ball.is_wicket) return `Wicket${ball.wicket_type ? `, ${ball.wicket_type.replace(/_/g, ' ')}` : ''}`;
+  if (ball.extra_type === 'bye') return `${ball.extras} bye${ball.extras === 1 ? '' : 's'}`;
+  if (ball.extra_type === 'leg_bye') return `${ball.extras} leg bye${ball.extras === 1 ? '' : 's'}`;
+  if (ball.is_wide) return `Wide${ball.extras ? `, ${ball.extras} run${ball.extras === 1 ? '' : 's'}` : ''}`;
+  if (ball.is_noball) return `No ball${ball.runs ? `, ${ball.runs} off bat` : ''}`;
+  if (ball.runs === 0) return 'Dot ball';
+  if (ball.runs === 4) return 'FOUR';
+  if (ball.runs === 6) return 'SIX';
+  return `${ball.runs} run${ball.runs === 1 ? '' : 's'}`;
+}
+
+function ScoreNotes({ innings }: { innings: Innings }) {
+  return (
+    <div className="grid gap-3">
+      <div>
+        <p className="eyebrow mb-2">Partnerships</p>
+        <div className="grid gap-1.5">
+          {(innings.partnerships || []).slice(-4).map(p => (
+            <div key={p.wicket_number} className="flex justify-between gap-2 rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2 py-1.5 text-[12px]">
+              <span className="min-w-0 truncate text-[var(--text-secondary)]">{p.batsman1_name} / {p.batsman2_name}</span>
+              <span className="font-bold tabular-nums text-[var(--text-primary)]">{p.runs} ({p.balls}b)</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <p className="eyebrow mb-2">Fall of wickets</p>
+        <div className="grid gap-1.5">
+          {(innings.fallOfWickets || []).length > 0 ? innings.fallOfWickets!.map(fow => (
+            <div key={fow.wicket_number} className="flex justify-between gap-2 rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2 py-1.5 text-[12px]">
+              <span className="min-w-0 truncate text-[var(--text-secondary)]">{fow.dismissed_player_name}</span>
+              <span className="font-bold tabular-nums text-[var(--text-primary)]">{fow.score} · {fow.overs}</span>
+            </div>
+          )) : <p className="text-[12px] text-[var(--text-muted)]">No wickets yet.</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BattingTable({ innings, framed = true }: { innings: LiveScore['innings'][number]; framed?: boolean }) {
+  if (!innings.battingCards?.length) return null;
+  return (
+    <section className={framed ? 'card' : ''}>
       <p className="eyebrow mb-2">Batting · {innings.battingTeam?.name}</p>
       <table className="w-full table-fixed text-[13px]">
         <colgroup>
@@ -292,10 +462,10 @@ function BattingTable({ innings }: { innings: LiveScore['innings'][number] }) {
             const onStrike = card.player_id === innings.on_strike_batsman_id;
             const sr = card.balls > 0 ? Math.round((card.runs / card.balls) * 100).toString() : '—';
             return (
-              <tr key={card.id} className="border-b border-[var(--border-subtle)] last:border-b-0">
-                <td className="table-cell px-1.5">
+              <tr key={card.id} className={`border-b border-[var(--border-subtle)] last:border-b-0 ${onStrike ? 'bg-[#f6fbf1]' : ''}`}>
+                <td className={`table-cell px-1.5 ${onStrike ? 'border-l-[3px] border-l-[var(--green)]' : ''}`}>
                   <div className="flex items-baseline gap-1">
-                    {onStrike && <span className="text-[var(--green-text)]">*</span>}
+                    {onStrike && <BatIcon size={13} strokeWidth={2.4} className="shrink-0 text-[var(--green-text)]" aria-label="On strike" />}
                     <span className="truncate font-semibold">{card.player?.name}</span>
                   </div>
                   <p className="truncate text-[11px] text-[var(--text-muted)]">
@@ -318,10 +488,10 @@ function BattingTable({ innings }: { innings: LiveScore['innings'][number] }) {
   );
 }
 
-function BowlingTable({ innings }: { innings: LiveScore['innings'][number] }) {
+function BowlingTable({ innings, framed = true }: { innings: LiveScore['innings'][number]; framed?: boolean }) {
   if (!innings.bowlingCards?.length) return null;
   return (
-    <section className="card">
+    <section className={framed ? 'card' : ''}>
       <p className="eyebrow mb-2">Bowling · {innings.bowlingTeam?.name}</p>
       <table className="w-full table-fixed text-[13px]">
         <colgroup>

@@ -61,10 +61,34 @@ export function scoringApi(token: string) {
       dismissed_player_id?: number;
       new_batsman_id?: number;
       extras?: number;
+      extra_type?: 'bye' | 'leg_bye' | 'wide' | 'no_ball';
+      next_striker_id?: number;
     }) => api.post(`/matches/${matchId}/ball`, data, { headers }).then(r => r.data.data),
 
     endOver: (matchId: number, next_bowler_id: number) =>
       api.post(`/matches/${matchId}/over/end`, { next_bowler_id }, { headers }).then(r => r.data.data),
+
+    correctPlayers: (matchId: number, data: {
+      current_batsman1_id?: number;
+      current_batsman2_id?: number;
+      on_strike_batsman_id?: number;
+      current_bowler_id?: number;
+    }) => api.post(`/matches/${matchId}/corrections/players`, data, { headers }).then(r => r.data.data),
+
+    reviseTarget: (matchId: number, target: number) =>
+      api.post(`/matches/${matchId}/corrections/target`, { target }, { headers }).then(r => r.data.data),
+
+    addPenalty: (matchId: number, data: { runs: number; reason?: string }) =>
+      api.post(`/matches/${matchId}/penalty`, data, { headers }).then(r => r.data.data),
+
+    auditLogs: (matchId: number) =>
+      api.get(`/matches/${matchId}/audit`, { headers }).then(r => r.data.data),
+
+    exportCsvUrl: (matchId: number) =>
+      `${api.defaults.baseURL}/matches/${matchId}/export.csv`,
+
+    unlockMatch: (matchId: number) =>
+      api.post(`/matches/${matchId}/unlock`, {}, { headers }).then(r => r.data.data),
 
     endInnings: (matchId: number, data: {
       opening_batsman1_id: number;

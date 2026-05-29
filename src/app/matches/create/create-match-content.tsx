@@ -87,6 +87,7 @@ export function CreateMatchContent() {
             <label className="label">Death from</label>
             <input className="input-mono text-center" type="number" min={1}
               value={form.death_overs_from} onChange={e => set('death_overs_from', e.target.value)} placeholder="—" />
+            <p className="mt-1 text-center text-[10px] font-semibold text-[var(--text-muted)]">From this over, wide = +1 and re-ball.</p>
           </div>
           <div>
             <label className="label">Wide rule</label>

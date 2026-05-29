@@ -11,7 +11,8 @@ const WICKET_TYPES: { value: WicketType; label: string }[] = [
   { value: 'run_out', label: 'Run Out' },
   { value: 'stumped', label: 'Stumped' },
   { value: 'hit_wicket', label: 'Hit Wicket' },
-  { value: 'retired', label: 'Retired' },
+  { value: 'retired_hurt', label: 'Retired Hurt' },
+  { value: 'retired_out', label: 'Retired Out' },
 ];
 
 interface Props {
@@ -22,12 +23,13 @@ interface Props {
   onClose: () => void;
 }
 
-const NO_BALL_WICKET_TYPES: WicketType[] = ['run_out', 'obstructing_field', 'retired'];
+const NO_BALL_WICKET_TYPES: WicketType[] = ['run_out', 'obstructing_field', 'retired_hurt', 'retired_out'];
 
 export function WicketModal({ batsmen, newBatsmenPool, isNoBall, onConfirm, onClose }: Props) {
   const [wicketType, setWicketType] = useState<WicketType>('bowled');
   const [dismissedId, setDismissedId] = useState<number>(batsmen[0]?.id || 0);
   const [newBatsmanId, setNewBatsmanId] = useState('');
+  const [nextStrikerId, setNextStrikerId] = useState('');
 
   useEffect(() => {
     if (isNoBall && !NO_BALL_WICKET_TYPES.includes(wicketType)) setWicketType('run_out');
@@ -58,9 +60,23 @@ export function WicketModal({ batsmen, newBatsmenPool, isNoBall, onConfirm, onCl
               {newBatsmenPool.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           )}
+          {(wicketType === 'run_out' || wicketType === 'retired_hurt') && newBatsmanId && (
+            <select className="input" value={nextStrikerId} onChange={e => setNextStrikerId(e.target.value)}>
+              <option value="">Who faces next ball?</option>
+              {[...batsmen.filter(Boolean), newBatsmenPool.find(p => String(p.id) === newBatsmanId)]
+                .filter(Boolean)
+                .map(p => <option key={p!.id} value={p!.id}>{p!.name}</option>)}
+            </select>
+          )}
           <button onClick={() => {
             if (newBatsmenPool.length > 0 && !newBatsmanId) return alert('Select next batsman');
-            onConfirm({ is_wicket: true, wicket_type: wicketType, dismissed_player_id: dismissedId, new_batsman_id: newBatsmanId ? Number(newBatsmanId) : undefined });
+            onConfirm({
+              is_wicket: true,
+              wicket_type: wicketType,
+              dismissed_player_id: dismissedId,
+              new_batsman_id: newBatsmanId ? Number(newBatsmanId) : undefined,
+              next_striker_id: nextStrikerId ? Number(nextStrikerId) : undefined,
+            });
           }} className="btn btn-danger h-11 w-full">Wicket confirmed</button>
         </div>
       </div>

@@ -3,10 +3,11 @@
 interface Props {
   matchStatus: string;
   onEndMatch: () => void;
+  onRequestEndMatch?: () => void;
   isLoading: boolean;
 }
 
-export function EndMatchControls({ matchStatus, onEndMatch, isLoading }: Props) {
+export function EndMatchControls({ matchStatus, onEndMatch, onRequestEndMatch, isLoading }: Props) {
   if (matchStatus !== 'live') return null;
 
   return (
@@ -17,7 +18,7 @@ export function EndMatchControls({ matchStatus, onEndMatch, isLoading }: Props) 
           <p className="mt-1 text-[13px] text-[var(--text-secondary)]">File the final scorecard.</p>
         </div>
         <button
-          onClick={() => confirm('End the match and file the final scorecard?') && onEndMatch()}
+          onClick={() => onRequestEndMatch ? onRequestEndMatch() : onEndMatch()}
           disabled={isLoading}
           className="btn btn-danger h-9 px-3"
         >
