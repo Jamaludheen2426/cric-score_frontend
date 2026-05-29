@@ -1,4 +1,4 @@
-import { BallRecord } from '@/types';
+import { BallRecord, Innings, Match } from '@/types';
 
 export function formatOvers(oversFloat: number): string {
   const full = Math.floor(oversFloat);
@@ -45,6 +45,20 @@ export function generatePin(): string {
 
 export function getScoreDisplay(innings: { total_runs: number; total_wickets: number }): string {
   return `${innings.total_runs}/${innings.total_wickets}`;
+}
+
+export function getMatchResult(innings: Innings[] = [], match?: Pick<Match, 'players_per_side' | 'status'>): string | null {
+  const first = innings.find(i => i.innings_number === 1);
+  const second = innings.find(i => i.innings_number === 2);
+  if (!first || !second) return null;
+  const firstName = first.battingTeam?.name || 'Team 1';
+  const secondName = second.battingTeam?.name || 'Team 2';
+  if (first.total_runs === second.total_runs) return 'Match tied';
+  if (first.total_runs > second.total_runs) {
+    return `${firstName} won by ${first.total_runs - second.total_runs} run${first.total_runs - second.total_runs === 1 ? '' : 's'}`;
+  }
+  const wicketsLeft = Math.max(0, Number(match?.players_per_side || 11) - second.total_wickets);
+  return `${secondName} won by ${wicketsLeft} wicket${wicketsLeft === 1 ? '' : 's'}`;
 }
 
 export function isDeathOvers(currentOver: number, deathFrom?: number): boolean {

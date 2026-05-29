@@ -19,8 +19,8 @@ import { EndInningsModal } from '@/components/scoring/EndInningsModal';
 import { CorrectionModal } from '@/components/scoring/CorrectionModal';
 import { DangerConfirmModal } from '@/components/scoring/DangerConfirmModal';
 import { MatchAlerts } from '@/components/MatchAlerts';
-import { LiveScore, Player } from '@/types';
-import { ballsPerOver } from '@/lib/utils';
+import { BallRecord, LiveScore, Player } from '@/types';
+import { ballsPerOver, getBallColor, getBallLabel, getMatchResult } from '@/lib/utils';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
@@ -55,6 +55,58 @@ function safeJson(value: string) {
   try { return JSON.parse(value); } catch { return null; }
 }
 
+function LastBallReview({ ball, canUndo, onEdit, isLoading }: {
+  ball?: BallRecord;
+  canUndo: boolean;
+  onEdit: () => void;
+  isLoading: boolean;
+}) {
+  if (!ball) return null;
+  return (
+    <section className="flex items-center gap-2 border-b border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2">
+      <p className="shrink-0 text-[10px] font-bold uppercase tracking-[0.05em] text-[var(--text-muted)]">Last ball</p>
+      <span className={getBallColor(ball)}>{getBallLabel(ball)}</span>
+      <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-[var(--text-secondary)]">
+        {ball.is_wicket ? `Wicket${ball.wicket_type ? ` - ${ball.wicket_type.replace(/_/g, ' ')}` : ''}` : `${ball.runs + ball.extras} run${ball.runs + ball.extras === 1 ? '' : 's'}`}
+      </span>
+      <button
+        onClick={onEdit}
+        disabled={!canUndo || isLoading}
+        className="btn btn-secondary btn-sm shrink-0"
+        title="Undo this ball, then enter the corrected ball"
+      >
+        {isLoading ? 'Undoing' : 'Edit last'}
+      </button>
+    </section>
+  );
+}
+
+function ScorerWarnings({ liveData, isFreeHit, isOverComplete, isPosting }: {
+  liveData: LiveScore;
+  isFreeHit: boolean;
+  isOverComplete: boolean;
+  isPosting: boolean;
+}) {
+  const current = liveData.innings.find(i => i.status === 'live');
+  const warnings: string[] = [];
+  if (isPosting) warnings.push('Saving ball');
+  if (isFreeHit) warnings.push('Free hit next');
+  if (isOverComplete) warnings.push('Over complete - choose next bowler');
+  if (current?.current_batsman1_id && current.current_batsman1_id === current.current_batsman2_id) warnings.push('Check batters');
+  if (!current?.current_bowler_id) warnings.push('Select bowler');
+  if (warnings.length === 0) return null;
+
+  return (
+    <section className="flex gap-1.5 overflow-x-auto border-b border-[var(--border-subtle)] bg-[#fff7ed] px-3 py-2">
+      {warnings.map(warning => (
+        <span key={warning} className="shrink-0 rounded border border-[var(--orange)] bg-white px-2 py-1 text-[11px] font-bold text-[var(--orange-text)]">
+          {warning}
+        </span>
+      ))}
+    </section>
+  );
+}
+
 export function ScorePageContent({ matchId }: { matchId: number }) {
   const [token, setToken] = useState<string | null>(null);
   const [showStartModal, setShowStartModal] = useState(false);
@@ -66,6 +118,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
   const [showAudit, setShowAudit] = useState(false);
   const [pendingBall, setPendingBall] = useState<PendingBall>({ runs: 0 });
   const [liveData, setLiveData] = useState<LiveScore | null>(null);
+  const [autoBowlerPromptOverId, setAutoBowlerPromptOverId] = useState<number | null>(null);
 
   const { data: match, isLoading } = useMatch(matchId);
   const { data: initialLiveScore } = useLiveScore(match?.share_token || '');
@@ -82,6 +135,29 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
 
   const { startMatch, addBall, endOver, correctPlayers, reviseTarget, addPenalty, unlockMatch, auditLogs, endInnings, endMatch, undoBall, exportCsvUrl } = useScoringActions(token || '', matchId);
 
+  useEffect(() => {
+    if (!token || !match || match.status !== 'live') return;
+    const activeInnings = liveData?.innings?.find(i => i.status === 'live');
+    const over = liveData?.currentOver;
+    if (!activeInnings || !over) return;
+
+    const requiredBalls = ballsPerOver(liveData?.match || match);
+    if (over.legal_balls < requiredBalls) {
+      if (autoBowlerPromptOverId === over.id) setAutoBowlerPromptOverId(null);
+      return;
+    }
+    if (autoBowlerPromptOverId === over.id) return;
+
+    setAutoBowlerPromptOverId(over.id);
+    setShowBowlerModal(true);
+  }, [
+    token,
+    match,
+    match?.status,
+    liveData,
+    autoBowlerPromptOverId,
+  ]);
+
   if (isLoading) return <PageLoader label="Loading match" />;
   if (!match) return <div className="page text-[var(--text-secondary)]">Match not found.</div>;
   if (!token) return <PinGate matchId={matchId} onSuccess={(t) => setToken(t)} />;
@@ -91,6 +167,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
   const perOver = ballsPerOver(liveData?.match || match);
   const isOverComplete = (currentOver?.legal_balls || 0) >= perOver;
   const lastCurrentBall = liveData?.currentOverBalls?.[liveData.currentOverBalls.length - 1];
+  const lastBall = lastCurrentBall || liveData?.recentBalls?.[liveData.recentBalls.length - 1];
   const isFreeHit = Boolean(lastCurrentBall?.is_noball || (lastCurrentBall?.is_free_hit && (lastCurrentBall.is_wide || lastCurrentBall.is_noball)));
   const bowlingTeamPlayers = currentInnings
     ? (currentInnings.bowling_team_id === match.team_a_id ? match.teamA : match.teamB)?.players || []
@@ -139,7 +216,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
   };
 
   return (
-    <div className="app-shell pb-[200px]">
+    <div className="app-shell pb-[360px] sm:pb-[300px]">
       {/* Match header */}
       <header className="sticky top-12 z-30 flex h-12 items-center gap-2 border-b border-[var(--border)] bg-[var(--bg-card)] px-2 sm:px-3">
         <Link href="/matches" className="btn btn-secondary btn-sm h-8 w-8 shrink-0 px-0 sm:w-auto sm:px-3" aria-label="Back to matches">
@@ -222,6 +299,18 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
         <>
           <ScoreHeader liveData={liveData} match={match} />
           <MatchAlerts liveData={liveData} compact />
+          <ScorerWarnings
+            liveData={liveData}
+            isFreeHit={isFreeHit}
+            isOverComplete={isOverComplete}
+            isPosting={addBall.isPending || endOver.isPending}
+          />
+          <LastBallReview
+            ball={lastBall}
+            canUndo={hasBallsInOver}
+            onEdit={() => undoBall.mutate()}
+            isLoading={undoBall.isPending}
+          />
           <section className="flex gap-2 border-b border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2">
             <button onClick={() => setCorrectionMode('batter')} className="btn btn-secondary btn-sm flex-1">Correct batsmen</button>
             <button onClick={() => setCorrectionMode('bowler')} className="btn btn-secondary btn-sm flex-1">Change bowler</button>
@@ -276,11 +365,19 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
             />
           )}
 
-          {isOverComplete ? (
+          {isOverComplete && currentOver ? (
             <div className="page">
               <section className="card text-center">
                 <p className="eyebrow mb-2">Over Complete</p>
                 <p className="text-[14px] font-bold">Change of bowler.</p>
+                <p className="mt-1 text-[12px] font-semibold tabular-nums text-[var(--text-secondary)]">
+                  Over {currentOver.over_number}: {currentOver.runs} run{currentOver.runs === 1 ? '' : 's'}, {currentOver.wickets} wicket{currentOver.wickets === 1 ? '' : 's'}
+                </p>
+                <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+                  {liveData.currentOverBalls.map((ball, i) => (
+                    <span key={i} className={getBallColor(ball)}>{getBallLabel(ball)}</span>
+                  ))}
+                </div>
                 <button onClick={() => setShowBowlerModal(true)} className="btn btn-primary mt-4">Select bowler</button>
               </section>
             </div>
@@ -345,6 +442,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
             <p className="eyebrow mb-2" style={{ color: 'var(--green-text)' }}>Filed</p>
             <p className="text-[16px] font-bold">Match closed.</p>
             <p className="mt-1 text-[12px] text-[var(--text-secondary)]">The full scorecard is in the archive.</p>
+            {liveData && <p className="mt-2 text-[13px] font-bold text-[var(--green-text)]">{getMatchResult(liveData.innings, match)}</p>}
             <Link href={`/matches/${matchId}/summary`} className="btn btn-primary mt-4 inline-flex">View scorecard</Link>
             <button onClick={() => unlockMatch.mutate()} disabled={unlockMatch.isPending} className="btn btn-secondary mt-2 inline-flex">
               {unlockMatch.isPending ? 'Unlocking' : 'Admin unlock'}

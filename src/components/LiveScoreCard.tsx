@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import { Share2 } from 'lucide-react';
 import { LiveScore, Match, BallRecord, Innings } from '@/types';
-import { ballsPerOver, formatOvers, formatRate, getBallLabel, getBallColor, getScoreDisplay } from '@/lib/utils';
+import { ballsPerOver, formatOvers, formatRate, getBallLabel, getBallColor, getMatchResult, getScoreDisplay } from '@/lib/utils';
 import { Narratives } from './Narratives';
 import { MatchAlerts } from './MatchAlerts';
 import { CricketBatIcon } from './icons/CricketBatIcon';
@@ -15,9 +15,10 @@ function Pellet({ ball }: { ball: BallRecord }) {
 }
 
 /** Plain-English one-liner describing the state of the match. */
-function statusSentence(current: Innings | undefined, match: Match, completed: Innings[], perOver: number): string {
-  if (match.status === 'completed') return 'Match closed';
+function statusSentence(current: Innings | undefined, match: Match, completed: Innings[], perOver: number, latestBall?: BallRecord | null): string {
+  if (match.status === 'completed') return getMatchResult(completed, match) || 'Match closed';
   if (!current) return 'Match not started';
+  if (latestBall?.is_noball || (latestBall?.is_free_hit && (latestBall.is_wide || latestBall.is_noball))) return 'Free hit coming next ball';
   if (current.innings_number === 2 && current.target != null) {
     const need = current.target - current.total_runs;
     const totalBalls = match.total_overs * perOver;
@@ -73,7 +74,7 @@ export function LiveScoreCard({ liveData, match }: Props) {
         <section className="rounded-md border border-[var(--green)] bg-[#edf7ee] px-3 py-2">
           <p className="text-[13px] font-bold text-[var(--green-text)]">
             <span className="live-dot mr-1.5" />
-            {statusSentence(current, match, completed, perOver)}
+            {statusSentence(current, match, completed, perOver, latestBall)}
           </p>
         </section>
       )}
@@ -118,6 +119,12 @@ export function LiveScoreCard({ liveData, match }: Props) {
             )}
             <span className="ml-auto text-[11px] uppercase tracking-wide text-[var(--text-muted)]">Extras {current.extras}</span>
           </div>
+        </section>
+      )}
+
+      {match.status === 'completed' && (
+        <section className="rounded-md border border-[var(--green)] bg-[#edf7ee] px-3 py-2 text-center">
+          <p className="text-[14px] font-bold text-[var(--green-text)]">{getMatchResult(liveData.innings, match) || 'Match closed'}</p>
         </section>
       )}
 
@@ -411,6 +418,28 @@ function commentaryText(ball: BallRecord) {
 function SharePoster({ liveData, current, match }: { liveData: LiveScore; current: Innings; match: Match }) {
   const [copied, setCopied] = useState(false);
   const posterText = `${match.title}\n${current.battingTeam?.name}: ${current.total_runs}/${current.total_wickets} (${formatOvers(current.total_overs_bowled)}/${match.total_overs})\nCRR ${current.run_rate != null ? formatRate(current.run_rate) : '-'}${current.target ? `\nTarget ${current.target} | Need ${current.runs_needed} from ${current.balls_left}` : ''}`;
+  const downloadPoster = () => {
+    const title = escapeSvg(match.title);
+    const score = escapeSvg(`${current.battingTeam?.name || 'Batting'} ${current.total_runs}/${current.total_wickets}`);
+    const detail = escapeSvg(`${formatOvers(current.total_overs_bowled)}/${match.total_overs} overs | CRR ${current.run_rate != null ? formatRate(current.run_rate) : '-'}`);
+    const chase = current.target ? escapeSvg(`Target ${current.target} | Need ${current.runs_needed} from ${current.balls_left}`) : '';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+      <rect width="1080" height="1080" fill="#f4f5f0"/>
+      <rect x="70" y="90" width="940" height="900" rx="24" fill="#fff" stroke="#c8cec2" stroke-width="4"/>
+      <text x="110" y="180" font-family="Inter, Arial, sans-serif" font-size="42" font-weight="800" fill="#166534">${title}</text>
+      <text x="110" y="320" font-family="Inter, Arial, sans-serif" font-size="92" font-weight="900" fill="#17211b">${score}</text>
+      <text x="110" y="410" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="700" fill="#526156">${detail}</text>
+      ${chase ? `<text x="110" y="480" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800" fill="#92400e">${chase}</text>` : ''}
+      <text x="110" y="880" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="700" fill="#7b857b">${escapeSvg(liveData.match.teamA?.name || match.teamA?.name || '')} v ${escapeSvg(liveData.match.teamB?.name || match.teamB?.name || '')}</text>
+    </svg>`;
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `match-${match.id}-poster.svg`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <section className="rounded-md border border-[var(--border)] bg-[var(--bg-card)] p-3">
@@ -420,21 +449,30 @@ function SharePoster({ liveData, current, match }: { liveData: LiveScore; curren
           <p className="truncate text-[13px] font-bold text-[var(--text-primary)]">{current.battingTeam?.name} {current.total_runs}/{current.total_wickets}</p>
           <p className="text-[11px] text-[var(--text-muted)]">{liveData.match.teamA?.name || match.teamA?.name} v {liveData.match.teamB?.name || match.teamB?.name}</p>
         </div>
-        <button
-          onClick={async () => {
-            await navigator.clipboard.writeText(posterText);
-            setCopied(true);
-            window.setTimeout(() => setCopied(false), 1600);
-          }}
-          className="btn btn-secondary btn-sm"
-          title="Copy shareable score text"
-        >
-          <Share2 size={14} />
-          {copied ? 'Copied' : 'Copy'}
-        </button>
+        <div className="flex shrink-0 gap-1">
+          <button
+            onClick={async () => {
+              await navigator.clipboard.writeText(posterText);
+              setCopied(true);
+              window.setTimeout(() => setCopied(false), 1600);
+            }}
+            className="btn btn-secondary btn-sm"
+            title="Copy shareable score text"
+          >
+            <Share2 size={14} />
+            {copied ? 'Copied' : 'Copy'}
+          </button>
+          <button onClick={downloadPoster} className="btn btn-secondary btn-sm" title="Download poster image">
+            Image
+          </button>
+        </div>
       </div>
     </section>
   );
+}
+
+function escapeSvg(value: string) {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function InsightPanels({ liveData, current, completed, match, ballsPerOver }: {
@@ -473,6 +511,13 @@ function InsightPanels({ liveData, current, completed, match, ballsPerOver }: {
     return { label: over.over_number, runs: running };
   });
   const maxWorm = Math.max(1, ...worm.map(w => w.runs), completed?.total_runs || 0);
+  const chartOvers = allOvers.slice(-12);
+  const wormPoints = worm.slice(-12);
+  const wormCoords = wormPoints.map((point, index) => {
+    const x = wormPoints.length === 1 ? 120 : 12 + (index / (wormPoints.length - 1)) * 216;
+    const y = 66 - (point.runs / maxWorm) * 58;
+    return { ...point, x, y };
+  });
 
   return (
     <section className="card">
@@ -491,10 +536,10 @@ function InsightPanels({ liveData, current, completed, match, ballsPerOver }: {
       <div className="grid gap-3 md:grid-cols-2">
         <div>
           <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--text-muted)]">Run-rate graph</p>
-          <div className="flex h-24 items-end gap-1 rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-2">
-            {allOvers.slice(-12).map(over => (
-              <div key={over.id} className="flex flex-1 flex-col items-center gap-1">
-                <div className="w-full rounded-t bg-[var(--green)]" style={{ height: `${Math.max(6, (over.runs / maxOverRuns) * 72)}px` }} />
+          <div className="flex h-24 items-end justify-start gap-2 overflow-x-auto rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-2">
+            {chartOvers.map(over => (
+              <div key={over.id} className="flex w-7 shrink-0 flex-col items-center gap-1">
+                <div className="w-5 rounded-t bg-[var(--green)]" style={{ height: `${Math.max(6, (over.runs / maxOverRuns) * 72)}px` }} />
                 <span className="text-[9px] tabular-nums text-[var(--text-muted)]">{over.over_number}</span>
               </div>
             ))}
@@ -502,13 +547,25 @@ function InsightPanels({ liveData, current, completed, match, ballsPerOver }: {
         </div>
         <div>
           <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--text-muted)]">Worm chart</p>
-          <div className="flex h-24 items-end gap-1 rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-2">
-            {worm.slice(-12).map(point => (
-              <div key={point.label} className="flex flex-1 flex-col items-center gap-1">
-                <div className="h-2 w-full rounded bg-[var(--blue)]" style={{ marginBottom: `${Math.max(0, (point.runs / maxWorm) * 64)}px` }} />
-                <span className="text-[9px] tabular-nums text-[var(--text-muted)]">{point.label}</span>
-              </div>
-            ))}
+          <div className="h-24 rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-2">
+            <svg viewBox="0 0 240 72" className="h-[72px] w-full overflow-visible" role="img" aria-label="Worm chart">
+              {wormCoords.length > 1 && (
+                <polyline
+                  points={wormCoords.map(point => `${point.x},${point.y}`).join(' ')}
+                  fill="none"
+                  stroke="#1d4ed8"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              )}
+              {wormCoords.map(point => (
+                <g key={point.label}>
+                  <circle cx={point.x} cy={point.y} r="4" fill="#1d4ed8" />
+                  <text x={point.x} y="71" textAnchor="middle" fontSize="9" fill="#7b857b">{point.label}</text>
+                </g>
+              ))}
+            </svg>
           </div>
         </div>
       </div>
