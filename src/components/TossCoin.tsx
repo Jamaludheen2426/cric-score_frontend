@@ -26,6 +26,11 @@ export function TossCoin({ onLanded, trigger, size = 96 }: Props) {
   const [angle, setAngle] = useState(0);                  // current rotateY in degrees
   const [tossing, setTossing] = useState(false);
   const lastTrigger = useRef(trigger);
+  const onLandedRef = useRef(onLanded);
+
+  useEffect(() => {
+    onLandedRef.current = onLanded;
+  }, [onLanded]);
 
   useEffect(() => {
     if (trigger === lastTrigger.current) return;          // initial mount
@@ -33,20 +38,22 @@ export function TossCoin({ onLanded, trigger, size = 96 }: Props) {
 
     const result: 'heads' | 'tails' = Math.random() < 0.5 ? 'heads' : 'tails';
     const extraSpins = 6 + Math.floor(Math.random() * 5);  // 6..10 full spins
-    // Always advance forward to keep direction consistent.
-    const targetMod = result === 'heads' ? 0 : 180;
-    const currentMod = ((angle % 360) + 360) % 360;
-    const delta = ((targetMod - currentMod) + 360) % 360;
-    const next = angle + extraSpins * 360 + delta;
 
     setTossing(true);
-    setAngle(next);
+    setAngle(currentAngle => {
+      // Always advance forward to keep direction consistent.
+      const targetMod = result === 'heads' ? 0 : 180;
+      const currentMod = ((currentAngle % 360) + 360) % 360;
+      const delta = ((targetMod - currentMod) + 360) % 360;
+      return currentAngle + extraSpins * 360 + delta;
+    });
+
     const t = setTimeout(() => {
       setTossing(false);
-      onLanded?.(result);
+      onLandedRef.current?.(result);
     }, 1600);
     return () => clearTimeout(t);
-  }, [trigger, angle, onLanded]);
+  }, [trigger]);
 
   return (
     <div className="text-center">
