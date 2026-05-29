@@ -18,7 +18,16 @@ export function ScoreHeader({ liveData, match }: Props) {
   const totalBalls = inningsOversLimit * perOver;
   const ballsBowled = Math.floor(Number(current.total_overs_bowled)) * perOver
                     + Math.round((Number(current.total_overs_bowled) % 1) * 10);
-  const ballsLeft = totalBalls - ballsBowled;
+  const ballsLeft = Math.max(0, totalBalls - ballsBowled);
+  const chaseClosedWithoutWin = isChase && ballsLeft <= 0 && (need ?? 0) > 0;
+  const chaseTileLabel = need != null && (need <= 0 || chaseClosedWithoutWin) ? 'Result' : 'Need';
+  const chaseTileValue = need != null
+    ? need <= 0
+      ? 'Won'
+      : chaseClosedWithoutWin
+        ? (need === 1 ? 'Tied' : 'Lost')
+        : String(need)
+    : '—';
 
   return (
     <section className="sticky top-[84px] z-30 border-b border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2.5">
@@ -53,8 +62,8 @@ export function ScoreHeader({ liveData, match }: Props) {
         <div className="mt-2 grid grid-cols-4 gap-1 border-t border-[var(--border-subtle)] pt-2">
           <ChaseTile label="Target"  value={target != null ? String(target) : '—'} />
           <ChaseTile
-            label={need != null && need <= 0 ? 'Result' : 'Need'}
-            value={need != null && need <= 0 ? 'Won' : (need != null ? String(need) : '—')}
+            label={chaseTileLabel}
+            value={chaseTileValue}
             tone="red"
           />
           <ChaseTile label="Balls left" value={String(Math.max(0, ballsLeft))} />

@@ -18,17 +18,27 @@ function Pellet({ ball }: { ball: BallRecord }) {
 function statusSentence(current: Innings | undefined, match: Match, completed: Innings[], perOver: number, latestBall?: BallRecord | null): string {
   if (match.status === 'completed') return getSuperOverResult(completed) || getMatchResult(completed, match) || 'Match closed';
   if (!current) return 'Match not started';
-  if (latestBall?.is_noball || (latestBall?.is_free_hit && (latestBall.is_wide || latestBall.is_noball))) return 'Free hit coming next ball';
   if (current.target != null) {
     const need = current.target - current.total_runs;
     const inningsOversLimit = current.innings_number > 2 ? 1 : match.total_overs;
     const totalBalls = inningsOversLimit * perOver;
     const ballsBowled = Math.floor(Number(current.total_overs_bowled)) * perOver
                       + Math.round((Number(current.total_overs_bowled) % 1) * 10);
-    const left = totalBalls - ballsBowled;
+    const left = Math.max(0, totalBalls - ballsBowled);
     if (need <= 0) return `${current.battingTeam?.name} won ${current.innings_number > 2 ? 'the super over' : 'the match'}`;
+    if (left <= 0) {
+      const defendingInnings = completed.find(i => i.innings_number === current.innings_number - 1);
+      if (defendingInnings && defendingInnings.total_runs === current.total_runs) {
+        return current.innings_number > 2
+          ? 'Super over tied - another super over needed'
+          : 'Match tied - super over needed';
+      }
+      return `${defendingInnings?.battingTeam?.name || 'Defending team'} won ${current.innings_number > 2 ? 'the super over' : 'the match'}`;
+    }
+    if (latestBall?.is_noball || (latestBall?.is_free_hit && (latestBall.is_wide || latestBall.is_noball))) return 'Free hit coming next ball';
     return `${current.battingTeam?.name} need ${need} from ${left} ball${left === 1 ? '' : 's'} to win`;
   }
+  if (latestBall?.is_noball || (latestBall?.is_free_hit && (latestBall.is_wide || latestBall.is_noball))) return 'Free hit coming next ball';
   // Innings 1 sentence
   return `${current.battingTeam?.name} batting · over ${Math.floor(Number(current.total_overs_bowled)) + 1} of ${match.total_overs}`;
 }
@@ -403,6 +413,20 @@ function TeamComparison({ current, completed }: { current: Innings; completed?: 
 
 function ChaseBlocks({ current, match, ballsPerOver }: { current: Innings; match: Match; ballsPerOver: number }) {
   if (current.target == null || current.runs_needed == null || current.balls_left == null) return null;
+  if (current.balls_left <= 0) {
+    const isTie = current.runs_needed === 1;
+    return (
+      <section className="card">
+        <p className="eyebrow mb-2">Required blocks</p>
+        <p className="text-[14px] font-bold text-[var(--text-primary)]">
+          {isTie
+            ? (current.innings_number > 2 ? 'Super over tied.' : 'Scores level. Super over needed.')
+            : 'Chase complete. Target not reached.'}
+        </p>
+        <p className="mt-2 text-[11px] text-[var(--text-muted)]">Target {current.target} in {current.innings_number > 2 ? 1 : match.total_overs} overs.</p>
+      </section>
+    );
+  }
   const ballsPerBlock = ballsPerOver;
   const blocks = Math.min(4, Math.ceil(current.balls_left / ballsPerBlock));
   const perOver = current.balls_left > 0 ? current.runs_needed / (current.balls_left / ballsPerOver) : 0;
@@ -469,12 +493,17 @@ function commentaryText(ball: BallRecord) {
 
 function SharePoster({ liveData, current, match }: { liveData: LiveScore; current: Innings; match: Match }) {
   const [copied, setCopied] = useState(false);
-  const posterText = `${match.title}\n${current.battingTeam?.name}: ${current.total_runs}/${current.total_wickets} (${formatOvers(current.total_overs_bowled)}/${match.total_overs})\nCRR ${current.run_rate != null ? formatRate(current.run_rate) : '-'}${current.target ? `\nTarget ${current.target} | Need ${current.runs_needed} from ${current.balls_left}` : ''}`;
+  const chaseText = current.target
+    ? current.balls_left === 0 && current.runs_needed === 1
+      ? `${current.innings_number > 2 ? 'Super over tied' : 'Match tied'} | Super over needed`
+      : `Target ${current.target} | Need ${current.runs_needed} from ${current.balls_left}`
+    : '';
+  const posterText = `${match.title}\n${current.battingTeam?.name}: ${current.total_runs}/${current.total_wickets} (${formatOvers(current.total_overs_bowled)}/${match.total_overs})\nCRR ${current.run_rate != null ? formatRate(current.run_rate) : '-'}${chaseText ? `\n${chaseText}` : ''}`;
   const downloadPoster = () => {
     const title = escapeSvg(match.title);
     const score = escapeSvg(`${current.battingTeam?.name || 'Batting'} ${current.total_runs}/${current.total_wickets}`);
     const detail = escapeSvg(`${formatOvers(current.total_overs_bowled)}/${match.total_overs} overs | CRR ${current.run_rate != null ? formatRate(current.run_rate) : '-'}`);
-    const chase = current.target ? escapeSvg(`Target ${current.target} | Need ${current.runs_needed} from ${current.balls_left}`) : '';
+    const chase = chaseText ? escapeSvg(chaseText) : '';
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
       <rect width="1080" height="1080" fill="#f4f5f0"/>
       <rect x="70" y="90" width="940" height="900" rx="24" fill="#fff" stroke="#c8cec2" stroke-width="4"/>

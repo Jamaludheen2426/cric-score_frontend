@@ -19,6 +19,13 @@ export function EndInningsModal({ teams, currentInnings, onConfirm, onClose, isL
   const newBattingTeam = currentInnings.bowling_team_id === teams.teamA.id ? teams.teamA : teams.teamB;
   const newBowlingTeam = currentInnings.batting_team_id === teams.teamA.id ? teams.teamA : teams.teamB;
   const target = (currentInnings.total_runs || 0) + 1;
+  const startsFirstSuperOver = currentInnings.innings_number === 2;
+  const startsSuperChase = currentInnings.innings_number === 3;
+  const title = startsFirstSuperOver
+    ? `${newBattingTeam.name} start super over`
+    : startsSuperChase
+      ? `${newBattingTeam.name} chase ${target} in super over`
+      : `${newBattingTeam.name} chase ${target}`;
   const canSubmit = batsman1 && batsman2 && bowler && batsman1 !== batsman2;
 
   return (
@@ -27,7 +34,7 @@ export function EndInningsModal({ teams, currentInnings, onConfirm, onClose, isL
         <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-3 py-3">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--text-muted)]">Change Innings</p>
-            <h2 className="text-[14px] font-bold uppercase text-[var(--text-primary)]">{newBattingTeam.name} chase {target}</h2>
+            <h2 className="text-[14px] font-bold uppercase text-[var(--text-primary)]">{title}</h2>
           </div>
           <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]">X</button>
         </div>
@@ -75,7 +82,7 @@ export function EndInningsModal({ teams, currentInnings, onConfirm, onClose, isL
             disabled={!canSubmit || isLoading}
             className="btn btn-primary flex-[1.5]"
           >
-            {isLoading ? 'Starting' : 'Begin Chase'}
+            {isLoading ? 'Starting' : startsFirstSuperOver ? 'Begin Super Over' : 'Begin Chase'}
           </button>
         </div>
       </div>

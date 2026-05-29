@@ -266,6 +266,19 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
   const secondDone = liveData?.innings?.find(i => i.innings_number === 2);
   const tiedAfterSecond = Boolean(firstDone && secondDone && firstDone.total_runs === secondDone.total_runs);
   const needsNextInnings = (liveData?.innings?.length ?? 0) < 2 || (tiedAfterSecond && (liveData?.innings?.length ?? 0) < 4);
+  const currentInningsOversLimit = currentInnings?.innings_number && currentInnings.innings_number > 2 ? 1 : match.total_overs;
+  const currentBallsBowled = currentInnings
+    ? Math.floor(Number(currentInnings.total_overs_bowled)) * perOver
+      + Math.round((Number(currentInnings.total_overs_bowled) % 1) * 10)
+    : 0;
+  const currentBallsLeft = currentInnings
+    ? Math.max(0, currentInningsOversLimit * perOver - currentBallsBowled)
+    : null;
+  const finishedLiveChase = Boolean(
+    currentInnings?.target != null &&
+    currentBallsLeft === 0 &&
+    currentInnings.total_runs < currentInnings.target
+  );
 
   return (
     <div className="app-shell pb-[360px] sm:pb-[300px]">
@@ -347,7 +360,7 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
       )}
 
       {/* ACTIVE SCORING */}
-      {(match.status === 'live' || liveData) && currentInnings && liveData && (
+      {(match.status === 'live' || liveData) && currentInnings && liveData && !finishedLiveChase && (
         <>
           <ScoreHeader liveData={liveData} match={match} />
           <MatchAlerts liveData={liveData} compact />
@@ -462,9 +475,9 @@ export function ScorePageContent({ matchId }: { matchId: number }) {
       )}
 
       {/* INNINGS CLOSED — set up chase or end match */}
-      {match.status === 'live' && liveData && !currentInnings &&
+      {match.status === 'live' && liveData && (!currentInnings || finishedLiveChase) &&
        (liveData?.innings?.length ?? 0) > 0 &&
-       liveData?.innings?.[liveData.innings.length - 1]?.status === 'completed' && (
+       (liveData?.innings?.[liveData.innings.length - 1]?.status === 'completed' || finishedLiveChase) && (
         <>
           <ScoreHeader liveData={liveData} match={match} />
           <div className="page">
